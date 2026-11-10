@@ -1,0 +1,1302 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Aplicativo interactivo de estudio de Gestión de Procesos en Salud · Ingeniería Biomédica, Areandina">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font-size:14px;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+.navhome{margin-left:auto;font-size:13px;text-decoration:none;color:var(--accent);white-space:nowrap}
+@media (max-width:900px){.navhome{margin-left:8px}}
+</style>
+<title>Laboratorio de Gestión en Salud</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@85..110,500..800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+/* Layout: barra lateral con las 4 unidades del micro + área de trabajo tipo banco de laboratorio (teoría, simulador, cálculo). Colores de trazas inspirados en el monitor de signos vitales. */
+:root{
+  --bg:#EDF1F4; --surface:#FFFFFF; --surface-2:#F5F7F9; --ink:#15202A; --muted:#566778; --line:#D3DCE4;
+  --accent:#4A4BA8; --accent-ink:#FFFFFF; --accent-soft:#E6E6F6;
+  --plot-bg:#FBFCFD; --grid:#E4EAF0; --axis:#8796A5; --band:rgba(33,135,90,.12); --shade:rgba(176,36,62,.08);
+  --s1:#1170B5; --s2:#C8362B; --s3:#1F8656; --s4:#B07408; --s5:#6C45B3; --s6:#7A8896;
+  --ok:#1E7D4F; --warn:#9A6200; --bad:#B0243E;
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --f-math:"STIX Two Text","Cambria Math","Times New Roman",serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1016; --surface:#111920; --surface-2:#16212B; --ink:#E3EAF0; --muted:#92A3B3; --line:#24313D;
+  --accent:#A3A5FF; --accent-ink:#13133A; --accent-soft:#22234A;
+  --plot-bg:#091016; --grid:#1A2630; --axis:#5D6F80; --band:rgba(69,211,138,.13); --shade:rgba(240,106,130,.10);
+  --s1:#4DB2F4; --s2:#FF6C5C; --s3:#46D28A; --s4:#F1B23C; --s5:#B28EFF; --s6:#8D9EAE;
+  --ok:#46D28A; --warn:#F1B23C; --bad:#F06A82; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1016; --surface:#111920; --surface-2:#16212B; --ink:#E3EAF0; --muted:#92A3B3; --line:#24313D;
+  --accent:#F06A82; --accent-ink:#1A0A0E; --accent-soft:#3A1720;
+  --plot-bg:#091016; --grid:#1A2630; --axis:#5D6F80; --band:rgba(69,211,138,.13); --shade:rgba(240,106,130,.10);
+  --s1:#4DB2F4; --s2:#FF6C5C; --s3:#46D28A; --s4:#F1B23C; --s5:#B28EFF; --s6:#8D9EAE;
+  --ok:#46D28A; --warn:#F1B23C; --bad:#F06A82; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--f-body);font-size:15px;line-height:1.55}
+a{color:var(--accent)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:14px;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:0;text-decoration:none;color:inherit}
+.brand b{font-family:var(--f-display);font-stretch:92%;font-weight:750;font-size:18px;letter-spacing:-.01em;white-space:nowrap}
+.brand span{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trace{width:64px;height:22px;flex:none;color:var(--accent)}
+.navsel{display:none;margin-left:auto;max-width:56vw;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--ink);font-size:13px}
+
+.app{display:grid;grid-template-columns:272px minmax(0,1fr);min-height:calc(100% - 50px)}
+.side{border-right:1px solid var(--line);background:var(--surface);padding:18px 12px 40px 16px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 49px);height:calc(100vh - 49px);overflow:auto}
+.side .home{display:block;padding:7px 10px;border-radius:6px;text-decoration:none;color:var(--ink);font-weight:600;margin-bottom:6px}
+.side h3{font-family:var(--f-display);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:18px 10px 6px;font-weight:650;line-height:1.35}
+.side h3 i{font-style:normal;color:var(--accent);margin-right:4px}
+.side a.it{display:flex;gap:8px;padding:6px 10px;border-radius:6px;text-decoration:none;color:var(--ink);font-size:13.5px;line-height:1.35}
+.side a.it span:first-child{font-family:var(--f-mono);font-size:12px;color:var(--muted);flex:none;padding-top:1px}
+.side a:hover{background:var(--surface-2)}
+.side a[aria-current="page"]{background:var(--accent-soft);color:var(--ink)}
+.side a[aria-current="page"] span:first-child{color:var(--accent)}
+
+main{min-width:0;padding-block:26px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.mod{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.mh .eyebrow{font-family:var(--f-mono);font-size:12px;color:var(--accent);letter-spacing:.04em}
+.mh h1{font-family:var(--f-display);font-weight:780;font-stretch:90%;font-size:clamp(26px,3.4vw,38px);line-height:1.08;margin:4px 0 8px;letter-spacing:-.015em;text-wrap:balance}
+.mh .lead{max-width:72ch;color:var(--muted);margin:0;font-size:16px}
+h2{font-family:var(--f-display);font-weight:700;font-stretch:95%;font-size:19px;margin:0 0 10px;letter-spacing:-.005em}
+h4{font-size:14px;margin:14px 0 4px}
+.case{display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:4px 8px 8px 4px;padding:12px 16px;max-width:900px}
+.case b{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);flex:none;padding-top:2px}
+.case p{margin:0}
+
+.theory{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:22px;align-items:start}
+.theory .txt p{margin:0 0 10px;max-width:68ch}
+.theory .txt ul{margin:0 0 10px;padding-left:20px}
+.formulas{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.formulas .ft{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.eq{font-family:var(--f-math);font-size:18px;line-height:1.7;overflow-x:auto;white-space:nowrap;padding:2px 0}
+.eq small{font-family:var(--f-body);font-size:12.5px;color:var(--muted);margin-left:10px;white-space:normal}
+.eqd{font-size:12.5px;color:var(--muted);margin-top:-6px;font-family:var(--f-body)}
+.m{font-family:var(--f-math);font-style:italic;font-size:1.08em}
+.fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 3px;line-height:1.25}
+.fr>span:first-child{border-bottom:1.2px solid currentColor;padding:0 4px 1px}
+.fr>span:last-child{padding:1px 4px 0}
+.sq{border-top:1.2px solid currentColor;padding:0 2px;margin-left:1px}
+.mat{display:inline-flex;vertical-align:middle;border-left:1.5px solid currentColor;border-right:1.5px solid currentColor;border-radius:5px;padding:1px 4px;margin:0 3px}
+.mat .mb{display:table}.mat .mr{display:table-row}.mat .mr>span{display:table-cell;padding:1px 7px;text-align:center;font-variant-numeric:tabular-nums}
+
+.lab{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+.lab .lt{grid-column:1/-1;display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:-4px}
+.lab .lt h2{margin:0}
+.lab .lt span{font-size:12.5px;color:var(--muted)}
+.ctl{display:flex;flex-direction:column;gap:14px;position:sticky;top:70px}
+.crow .clab{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-bottom:4px;align-items:baseline}
+.crow .clab label{color:var(--ink)}
+.crow output{font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--accent)}
+.crow output .u{color:var(--muted);font-size:11.5px}
+input[type=range]{width:100%;accent-color:var(--accent);margin:0}
+.seg{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--surface-2)}
+.seg button{flex:1 1 auto;border:0;background:transparent;padding:7px 10px;font-size:12.5px;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-checked="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+.btn{border:1px solid var(--line);background:var(--surface-2);border-radius:6px;padding:6px 10px;font-size:12.5px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.chk{display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer}
+.chk input{accent-color:var(--accent);width:16px;height:16px}
+.crow.num{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px}
+.crow.num input{width:110px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--ink);font-family:var(--f-mono)}
+.plots{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;min-width:0}
+.plots.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.plot{margin:0;min-width:0}
+.plot figcaption{font-size:12.5px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.plot figcaption b{color:var(--ink);font-weight:600}
+.plot canvas{display:block;width:100%;height:280px;border-radius:6px}
+.plot.short canvas{height:210px}
+.plot.tall canvas{height:320px}
+.plots .kpis,.plots .tbl{grid-column:1/-1}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:16px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.legend i.pt{width:8px;height:8px;border-radius:50%}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.kpi{background:var(--surface-2);border:1px solid var(--line);border-radius:7px;padding:8px 10px}
+.kpi .k{font-size:11.5px;color:var(--muted);line-height:1.3}
+.kpi .v{font-family:var(--f-mono);font-size:17px;font-variant-numeric:tabular-nums;margin-top:2px}
+.pill{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:999px;border:1px solid currentColor;letter-spacing:.02em}
+.pill.ok{color:var(--ok)}.pill.warn{color:var(--warn)}.pill.bad{color:var(--bad)}
+
+.calc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:10px 26px}
+.step{padding:8px 0;border-bottom:1px dashed var(--line);min-width:0}
+.step .sl{font-size:12.5px;color:var(--muted)}
+.step .se{font-family:var(--f-math);font-size:17px;overflow-x:auto;white-space:nowrap;line-height:1.75}
+.step .se b{font-family:var(--f-mono);font-weight:500;font-size:14.5px;color:var(--accent)}
+.note{font-size:13.5px;color:var(--muted);margin:12px 0 0;max-width:80ch}
+.note.alert{color:var(--bad)}
+
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;font-size:13.5px;min-width:100%}
+th,td{border-bottom:1px solid var(--line);padding:6px 10px;text-align:left;font-variant-numeric:tabular-nums}
+th{font-weight:600;color:var(--muted);font-size:12px;letter-spacing:.03em}
+td.mono{font-family:var(--f-mono);font-size:13px}
+.routh td{font-family:var(--f-mono);text-align:right}
+.routh td:first-child{text-align:left;color:var(--muted)}
+.routh td.fc{font-weight:600}
+.routh td.neg{color:var(--bad)}
+
+.practice details{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-bottom:8px}
+.practice summary{cursor:pointer;font-weight:500}
+.practice details p{margin:8px 0 2px;color:var(--muted)}
+
+.diagram{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px}
+.diagram svg{display:block;min-width:640px;width:100%;height:auto}
+
+/* inicio */
+.hero{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:26px;align-items:center}
+.hero h1{font-family:var(--f-display);font-weight:800;font-stretch:88%;font-size:clamp(32px,4.6vw,54px);line-height:1;margin:6px 0 12px;letter-spacing:-.02em;text-wrap:balance}
+.hero p{color:var(--muted);max-width:60ch;margin:0 0 8px;font-size:16px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--muted);margin-top:12px}
+.meta b{color:var(--ink);font-weight:600}
+.units{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.unit{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.unit .un{font-family:var(--f-mono);font-size:12px;color:var(--accent)}
+.unit h2{margin:4px 0 10px}
+.unit a{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--line);text-decoration:none;color:var(--ink);font-size:14px}
+.unit a span:first-child{font-family:var(--f-mono);color:var(--muted);font-size:12.5px;flex:none;padding-top:1px}
+.unit a:hover span:last-child{color:var(--accent)}
+.unit a small{display:block;color:var(--muted);font-size:12.5px}
+.fsheet{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+
+@media (max-width:1020px){
+  .theory{grid-template-columns:minmax(0,1fr)}
+  .lab{grid-template-columns:minmax(0,1fr)}
+  .ctl{position:static}
+  .hero{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{display:none}
+  .navsel{display:block}
+  .brand span{display:none}
+  .units,.fsheet{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:640px){
+  .plots.two{grid-template-columns:minmax(0,1fr)}
+  .plot canvas{height:240px}
+  .lab{padding:12px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.expl{display:flex;flex-direction:column;gap:4px}
+.egrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:12px}
+.ecard{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0}
+.ecard .en{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent)}
+.ecard .eq{font-size:17px;white-space:normal}
+.ecard p{margin:2px 0 8px;font-size:13.5px;color:var(--muted)}
+.vt{min-width:0;width:100%;font-size:13px}
+.vt td{padding:4px 6px;vertical-align:top}
+.vt td.sym{font-family:var(--f-math);font-style:italic;font-size:15px;white-space:nowrap;color:var(--ink);width:1%}
+.vt td.un{font-family:var(--f-mono);font-size:12px;color:var(--muted);white-space:nowrap;text-align:right;width:1%}
+.work{grid-column:1/-1;min-width:0}
+.et input,.et select,.addc input,.addc select,#g31-prob{padding:5px 7px;border:1px solid var(--line);border-radius:5px;background:var(--surface-2);color:var(--ink);font:inherit;font-size:13px;max-width:100%}
+.et td{padding:3px 6px}
+.del{border:0;background:transparent;color:var(--muted);font-size:18px;cursor:pointer;line-height:1}
+.del:hover{color:var(--bad)}
+.tline{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px}
+.tl{flex:0 0 190px;background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:6px;padding:10px 12px}
+.tl b{font-family:var(--f-mono);font-size:13px;color:var(--accent)}
+.tl span{display:block;font-weight:600;margin-top:2px}
+.tl p{margin:4px 0 0;font-size:12.5px;color:var(--muted)}
+.clsf,.isoq{display:flex;flex-direction:column;gap:6px}
+.isoq{margin-bottom:12px}
+.isoq h4{margin:6px 0 2px}
+.ci{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);font-size:13.5px}
+.ci .seg{min-width:120px}
+.ci .seg button{padding:5px 9px}
+.ci em{grid-column:1/-1;font-style:normal;font-size:12px;color:var(--muted)}
+.ci em:empty{display:none}
+.ci[data-st="ok"]{border-color:var(--ok)}.ci[data-st="ok"] em{color:var(--ok)}
+.ci[data-st="bad"]{border-color:var(--bad)}.ci[data-st="bad"] em{color:var(--bad)}
+.addc{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.addc input{flex:1 1 220px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px 4px 3px 10px}
+.chip button{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:14px}
+.vsm{display:flex;align-items:stretch;gap:6px;overflow-x:auto;padding:6px 0}
+.vb{flex:0 0 128px;border:1.5px solid var(--ink);border-radius:4px;padding:8px;background:var(--surface);display:flex;flex-direction:column;gap:2px;font-size:12px}
+.vb b{font-size:12.5px}
+.vb small{color:var(--muted)}
+.vb small.va{color:var(--ok);font-weight:600}
+.vb.bn{border-color:var(--bad);box-shadow:0 0 0 2px var(--accent-soft)}
+.vw{flex:0 0 58px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:var(--warn)}
+.vw .tri{font-size:20px;line-height:1}
+.ladder{display:flex;flex-wrap:wrap;gap:6px 18px;font-family:var(--f-mono);font-size:12.5px;margin-top:6px}
+.gantt{display:flex;flex-direction:column;gap:5px;font-size:12.5px}
+.gr{display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr);gap:10px;align-items:center}
+.gr>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gb{position:relative;height:16px;background:var(--surface-2);border-radius:3px}
+.gb i{position:absolute;top:2px;bottom:2px;border-radius:3px;background:var(--s6)}
+.gb i.cr{background:var(--accent)}
+.gb i.sl{background:transparent;border:1px dashed var(--muted)}
+.gax{position:relative;height:16px;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.gax b{position:absolute;font-weight:400;transform:translateX(-50%)}
+@media (max-width:640px){.gr{grid-template-columns:minmax(0,1fr)}}
+</style>
+
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="#inicio">
+    <svg class="trace" viewBox="0 0 64 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 18h10V8h10v6h10V4h10v10h10v4"/></svg>
+    <b>Gestión de Procesos en Salud</b><span>Ingeniería Biomédica · VII semestre</span>
+  </a>
+  <a class="navhome" href="index.html">← Materias</a>
+  <select id="navsel" class="navsel" aria-label="Ir a un tema"></select>
+</header>
+<div class="app">
+  <nav class="side" id="side" aria-label="Temas del microcurrículo"></nav>
+  <main id="main"></main>
+</div>
+
+<script>
+"use strict";
+/* =============== utilidades numéricas =============== */
+const $=(s,r=document)=>r.querySelector(s);
+const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+const PI=Math.PI;
+function fmt(x,d=2){
+  if(x===undefined||x===null||Number.isNaN(x)) return '—';
+  if(!isFinite(x)) return x>0?'∞':'−∞';
+  const a=Math.abs(x);
+  if(a!==0&&(a>=1e6||a<Math.pow(10,-d)/2)) return sci(x,2);
+  return x.toLocaleString('es-CO',{minimumFractionDigits:0,maximumFractionDigits:d}).replace('-','−');
+}
+function sci(x,d=2){
+  if(x===0) return '0';
+  const e=Math.floor(Math.log10(Math.abs(x))); const m=x/Math.pow(10,e);
+  return `${m.toLocaleString('es-CO',{maximumFractionDigits:d}).replace('-','−')}×10<sup>${e}</sup>`;
+}
+function fsig(x,s=3){ if(!isFinite(x)||x===0) return fmt(x); const d=Math.max(0,s-1-Math.floor(Math.log10(Math.abs(x)))); return fmt(x,Math.min(d,6)); }
+const fr=(a,b)=>`<span class="fr"><span>${a}</span><span>${b}</span></span>`;
+const sq=x=>`√<span class="sq">${x}</span>`;
+const mat=rows=>`<span class="mat"><span class="mb">${rows.map(r=>`<span class="mr">${r.map(c=>`<span>${c}</span>`).join('')}</span>`).join('')}</span></span>`;
+const B=x=>`<b>${x}</b>`;
+
+const Cx=(re,im=0)=>({re,im});
+const cadd=(a,b)=>Cx(a.re+b.re,a.im+b.im), csub=(a,b)=>Cx(a.re-b.re,a.im-b.im);
+const cmul=(a,b)=>Cx(a.re*b.re-a.im*b.im,a.re*b.im+a.im*b.re);
+const cdiv=(a,b)=>{const d=b.re*b.re+b.im*b.im; return Cx((a.re*b.re+a.im*b.im)/d,(a.im*b.re-a.re*b.im)/d);};
+const cabs=a=>Math.hypot(a.re,a.im);
+function cfmt(z,d=2){ if(Math.abs(z.im)<1e-9) return fmt(z.re,d); return `${fmt(z.re,d)} ${z.im>=0?'+':'−'} j${fmt(Math.abs(z.im),d)}`; }
+function polesTxt(rs,d=2){ const out=[]; rs.forEach(z=>{ if(Math.abs(z.im)<1e-9) out.push(fmt(z.re,d)); else if(z.im>0) out.push(`${fmt(z.re,d)} ± j${fmt(z.im,d)}`); }); return out.join(' ; '); }
+
+function polyval(p,s){ let r=Cx(0); for(const c of p) r=cadd(cmul(r,s),Cx(c)); return r; }
+const polyvalR=(p,x)=>p.reduce((r,c)=>r*x+c,0);
+function polymul(a,b){ const r=new Array(a.length+b.length-1).fill(0); a.forEach((x,i)=>b.forEach((y,j)=>r[i+j]+=x*y)); return r; }
+function polyadd(a,b){ const n=Math.max(a.length,b.length); const r=new Array(n).fill(0); a.forEach((x,i)=>r[n-a.length+i]+=x); b.forEach((x,i)=>r[n-b.length+i]+=x); return r; }
+const polyscale=(a,k)=>a.map(x=>x*k);
+const polyder=p=>p.slice(0,-1).map((c,i)=>c*(p.length-1-i));
+function polyRoots(p0){
+  let p=p0.slice(); while(p.length>1&&Math.abs(p[0])<1e-14) p.shift();
+  const roots=[]; while(p.length>1&&Math.abs(p[p.length-1])<1e-14){ p.pop(); roots.push(Cx(0)); }
+  const n=p.length-1; if(n<1) return roots;
+  const a=p.map(v=>v/p[0]);
+  if(n===1){ roots.push(Cx(-a[1])); return roots; }
+  if(n===2){ const d=a[1]*a[1]-4*a[2]; if(d>=0){const s=Math.sqrt(d); roots.push(Cx((-a[1]+s)/2),Cx((-a[1]-s)/2));} else {const s=Math.sqrt(-d)/2; roots.push(Cx(-a[1]/2,s),Cx(-a[1]/2,-s));} return roots; }
+  let R=0; for(let i=1;i<=n;i++) R=Math.max(R,Math.pow(Math.abs(a[i]),1/i)); R=Math.max(2*R,1e-6);
+  let z=[]; for(let k=0;k<n;k++) z.push(Cx(R*Math.cos(2*PI*k/n+0.4),R*Math.sin(2*PI*k/n+0.4)));
+  for(let it=0;it<1000;it++){
+    let md=0;
+    for(let i=0;i<n;i++){ let den=Cx(1); for(let j=0;j<n;j++) if(j!==i) den=cmul(den,csub(z[i],z[j]));
+      const dz=cdiv(polyval(a,z[i]),den); if(!isFinite(dz.re)||!isFinite(dz.im)) continue; z[i]=csub(z[i],dz); md=Math.max(md,cabs(dz)); }
+    if(md<1e-13*R) break;
+  }
+  z.forEach(r=>{ if(Math.abs(r.im)<1e-7*Math.max(1,Math.abs(r.re))) r.im=0; roots.push(r); });
+  return roots;
+}
+
+/* función de transferencia -> espacio de estados (forma canónica controlable) */
+function tf2ss(num,den){
+  den=den.slice(); while(Math.abs(den[0])<1e-15) den.shift();
+  const n=den.length-1, a0=den[0]; const a=den.map(v=>v/a0);
+  let b=num.map(v=>v/a0); while(b.length<n+1) b.unshift(0);
+  const D=b[0]; const A=[]; for(let i=0;i<n;i++){ A.push(new Array(n).fill(0)); if(i<n-1) A[i][i+1]=1; }
+  for(let j=0;j<n;j++) A[n-1][j]=-a[n-j];
+  const Bv=new Array(n).fill(0); Bv[n-1]=1;
+  const Cv=[]; for(let j=0;j<n;j++) Cv.push(b[n-j]-a[n-j]*D);
+  return {A,B:Bv,C:Cv,D,n};
+}
+function deriv(ss,x,u){ const n=ss.n, dx=new Array(n); for(let i=0;i<n;i++){ let s=ss.B[i]*u; const r=ss.A[i]; for(let j=0;j<n;j++) s+=r[j]*x[j]; dx[i]=s; } return dx; }
+function rk4(ss,x,u,dt){ const n=ss.n; const k1=deriv(ss,x,u);
+  const x2=x.map((v,i)=>v+dt/2*k1[i]), k2=deriv(ss,x2,u);
+  const x3=x.map((v,i)=>v+dt/2*k2[i]), k3=deriv(ss,x3,u);
+  const x4=x.map((v,i)=>v+dt*k3[i]), k4=deriv(ss,x4,u);
+  return x.map((v,i)=>v+dt/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i])); }
+const outp=(ss,x,u)=>ss.C.reduce((s,c,i)=>s+c*x[i],0)+ss.D*u;
+function simTF(num,den,uf,T,N=2500,x0){
+  const ss=tf2ss(num,den); const dt=T/N; let x=x0?x0.slice():new Array(ss.n).fill(0);
+  const t=[],y=[];
+  for(let i=0;i<=N;i++){ const ti=i*dt, u=uf(ti); t.push(ti); y.push(outp(ss,x,u)); if(ss.n) x=rk4(ss,x,uf(ti+dt/2),dt); }
+  return {t,y};
+}
+function stepInfo(t,y,yf,y0=0){
+  const n=y.length; if(yf===undefined) yf=y[n-1];
+  const amp=yf-y0; let pk=-Infinity,tp=NaN;
+  for(let i=0;i<n;i++){ const v=(y[i]-y0)*Math.sign(amp||1); if(v>pk){pk=v;tp=t[i];} }
+  const Mp=Math.abs(amp)>1e-12&&pk>Math.abs(amp)?(pk-Math.abs(amp))/Math.abs(amp)*100:0;
+  let t10=NaN,t90=NaN; for(let i=0;i<n;i++){ const v=(y[i]-y0)/(amp||1); if(isNaN(t10)&&v>=0.1) t10=t[i]; if(v>=0.9){t90=t[i];break;} }
+  let ts=0; const tol=0.02*Math.abs(amp);
+  for(let i=n-1;i>=0;i--){ if(Math.abs(y[i]-yf)>tol){ ts=i<n-1?t[i+1]:NaN; break; } }
+  return {Mp,tp:Mp>0.05?tp:NaN,tr:t90-t10,ts};
+}
+function lcg(seed){ let s=seed>>>0; return ()=>{ s=(1664525*s+1013904223)>>>0; return s/4294967296; }; }
+
+/* =============== gráficas en canvas =============== */
+const CSS=n=>getComputedStyle(document.documentElement).getPropertyValue('--'+n).trim();
+const colr=c=>!c?CSS('s1'):(c[0]==='#'||c.startsWith('rgb'))?c:CSS(c)||c;
+function niceStep(range,n){ const raw=range/n; const p=Math.pow(10,Math.floor(Math.log10(raw))); const r=raw/p; return (r<1.5?1:r<3?2:r<7?5:10)*p; }
+function ticks(a,b,n){ const st=niceStep(b-a,n); const out=[]; for(let v=Math.ceil(a/st-1e-9)*st; v<=b+st*1e-9; v+=st) out.push(Math.abs(v)<st*1e-9?0:+v.toPrecision(12)); return out; }
+function tickLab(v,log){ if(log){ if(v>=0.01&&v<=10000) return fmt(v,2); return '10^'+Math.round(Math.log10(v)); } const a=Math.abs(v); if(a!==0&&(a>=1e5||a<1e-3)) return v.toExponential(0).replace('-','−'); return fmt(v,4); }
+function drawPlot(cv,o){
+  cv._o=o; const W=cv.clientWidth,H=cv.clientHeight; if(!W||!H) return;
+  const dpr=Math.min(window.devicePixelRatio||1,2.5); cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
+  const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,W,H);
+  const ml=o.ylabel?60:48, mr=12, mt=10, mb=o.xlabel?40:24; const pw=W-ml-mr, ph=H-mt-mb;
+  const lx=o.xlog?(v=>Math.log10(v)):(v=>v);
+  let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
+  const take=(xs,ys)=>{ for(let i=0;i<xs.length;i++){ const X=xs[i],Y=ys[i]; if(!isFinite(X)||!isFinite(Y)||(o.xlog&&X<=0)) continue; if(o.yclip&&(Y<o.yclip[0]||Y>o.yclip[1])) continue; if(o.xclip&&(X<o.xclip[0]||X>o.xclip[1])) continue; const L=lx(X); if(L<x0)x0=L; if(L>x1)x1=L; if(Y<y0)y0=Y; if(Y>y1)y1=Y; } };
+  (o.series||[]).forEach(s=>take(s.x,s.y)); (o.points||[]).forEach(p=>take([p.x],[p.y]));
+  if(!o.ylim)(o.hlines||[]).forEach(h=>{ if(h.y<y0)y0=h.y; if(h.y>y1)y1=h.y; });
+  if(o.xlim){x0=lx(o.xlim[0]);x1=lx(o.xlim[1]);}
+  if(!isFinite(x0)){x0=0;x1=1;} if(x1-x0<1e-12){x0-=1;x1+=1;}
+  if(o.ylim){y0=o.ylim[0];y1=o.ylim[1];}
+  else{ if(!isFinite(y0)){y0=-1;y1=1;} if(o.yzero){y0=Math.min(y0,0);y1=Math.max(y1,0);} if(y1-y0<1e-12){y0-=1;y1+=1;} const pad=(y1-y0)*0.08; y0-=pad; y1+=pad; }
+  if(o.equal){ if(!o.xlim){const p=(x1-x0)*0.08; x0-=p; x1+=p;} const sx=(x1-x0)/pw, sy=(y1-y0)/ph; if(sx>sy){const c=(y0+y1)/2,h=sx*ph/2; y0=c-h; y1=c+h;} else {const c=(x0+x1)/2,h=sy*pw/2; x0=c-h; x1=c+h;} }
+  const X=v=>ml+(lx(v)-x0)/(x1-x0)*pw, Y=v=>mt+(y1-v)/(y1-y0)*ph;
+  const fm=CSS('f-mono')||'monospace';
+  g.fillStyle=CSS('plot-bg'); g.fillRect(ml,mt,pw,ph);
+  g.font=`11px ${fm}`; g.lineWidth=1; g.strokeStyle=CSS('grid'); g.fillStyle=CSS('muted');
+  let xt=[];
+  if(o.xlog){ for(let e=Math.floor(x0);e<=Math.ceil(x1);e++) for(const m of [1,2,5]){ const v=m*Math.pow(10,e), L=Math.log10(v); if(L>=x0-1e-9&&L<=x1+1e-9) xt.push({v,maj:m===1}); } }
+  else if(o.xcats) xt=o.xcats.map((c,i)=>({v:i+1,maj:true,lab:c})); else xt=ticks(x0,x1,Math.max(3,Math.floor(pw/85))).map(v=>({v,maj:true}));
+  g.textAlign='center'; g.textBaseline='top';
+  xt.forEach(t=>{ const px=Math.round(X(t.v))+.5; g.beginPath(); g.moveTo(px,mt); g.lineTo(px,mt+ph); g.stroke(); if(t.maj){ let lb=t.lab??tickLab(t.v,o.xlog); if(t.lab){ const mw=pw/xt.length-6; while(lb.length>2&&g.measureText(lb).width>mw) lb=lb.slice(0,-2)+'…'; } g.fillText(lb,px,mt+ph+5); } });
+  g.textAlign='right'; g.textBaseline='middle';
+  ticks(y0,y1,Math.max(3,Math.floor(ph/42))).forEach(v=>{ const py=Math.round(Y(v))+.5; g.beginPath(); g.moveTo(ml,py); g.lineTo(ml+pw,py); g.stroke(); g.fillText(tickLab(v),ml-6,py); });
+  g.save(); g.beginPath(); g.rect(ml,mt,pw,ph); g.clip();
+  if(o.under) o.under(g,X,Y,{ml,mt,pw,ph,x0,x1,y0,y1});
+  (o.bands||[]).forEach(b=>{ g.fillStyle=colr(b.color||'band'); const a=Y(b.y1),c=Y(b.y0); g.fillRect(ml,a,pw,c-a); });
+  g.strokeStyle=CSS('axis'); g.lineWidth=1;
+  if(o.axes0){ if(0>=y0&&0<=y1){ g.beginPath(); g.moveTo(ml,Math.round(Y(0))+.5); g.lineTo(ml+pw,Math.round(Y(0))+.5); g.stroke(); } if(!o.xlog&&0>=x0&&0<=x1){ g.beginPath(); g.moveTo(Math.round(X(0))+.5,mt); g.lineTo(Math.round(X(0))+.5,mt+ph); g.stroke(); } }
+  const lineAt=(isH,v,c,dash,lab)=>{ g.strokeStyle=colr(c||'s6'); g.setLineDash(dash||[5,4]); g.lineWidth=1.2; g.beginPath(); if(isH){const py=Y(v); g.moveTo(ml,py); g.lineTo(ml+pw,py);} else {const px=X(v); g.moveTo(px,mt); g.lineTo(px,mt+ph);} g.stroke(); g.setLineDash([]);
+    if(lab){ g.fillStyle=colr(c||'s6'); g.font=`11px ${fm}`; if(isH){ g.textAlign='right'; g.textBaseline='bottom'; g.fillText(lab,ml+pw-4,Y(v)-2);} else { g.textAlign='left'; g.textBaseline='top'; g.fillText(lab,X(v)+4,mt+4);} } };
+  (o.hlines||[]).forEach(h=>lineAt(true,h.y,h.color,h.dash,h.label)); (o.vlines||[]).forEach(h=>lineAt(false,h.x,h.color,h.dash,h.label));
+  (o.series||[]).forEach(s=>{
+    const c=colr(s.color); g.strokeStyle=c; g.fillStyle=c; g.lineWidth=s.width||2; g.setLineDash(s.dash||[]);
+    if(s.bars){ const bw=(X(2)-X(1))*(s.bw||0.62), p0=Y(Math.max(y0,0)); for(let i=0;i<s.x.length;i++){ const px=X(s.x[i]), py=Y(s.y[i]); g.fillRect(px-bw/2,Math.min(py,p0),bw,Math.abs(p0-py)); } }
+    else if(s.dots){ const r=s.r||1.6; for(let i=0;i<s.x.length;i++){ const xv=s.x[i],yv=s.y[i]; if(!isFinite(xv)||!isFinite(yv)) continue; g.beginPath(); g.arc(X(xv),Y(yv),r,0,2*PI); g.fill(); } }
+    else{ g.beginPath(); let pen=false; const lim=(y1-y0)*50;
+      for(let i=0;i<s.x.length;i++){ const xv=s.x[i],yv=s.y[i]; if(!isFinite(xv)||!isFinite(yv)||(o.xlog&&xv<=0)||yv>y1+lim||yv<y0-lim){pen=false;continue;} const px=X(xv),py=Y(yv); if(pen) g.lineTo(px,py); else {g.moveTo(px,py);pen=true;} }
+      g.stroke(); }
+    g.setLineDash([]);
+  });
+  (o.points||[]).forEach(p=>{ const c=colr(p.color||'s2'); const px=X(p.x),py=Y(p.y),r=p.size||5; g.strokeStyle=c; g.fillStyle=c; g.lineWidth=2;
+    if(p.shape==='x'){ g.beginPath(); g.moveTo(px-r,py-r); g.lineTo(px+r,py+r); g.moveTo(px+r,py-r); g.lineTo(px-r,py+r); g.stroke(); }
+    else if(p.shape==='o'){ g.beginPath(); g.arc(px,py,r,0,2*PI); g.stroke(); }
+    else if(p.shape==='ring'){ g.beginPath(); g.arc(px,py,r,0,2*PI); g.fillStyle=CSS('plot-bg'); g.fill(); g.stroke(); }
+    else { g.beginPath(); g.arc(px,py,r,0,2*PI); g.fill(); }
+    if(p.text){ g.font=`11px ${fm}`; g.textAlign='left'; g.textBaseline='bottom'; g.fillStyle=c; g.fillText(p.text,px+r+3,py-3); } });
+  g.restore();
+  g.strokeStyle=CSS('line'); g.lineWidth=1; g.strokeRect(ml+.5,mt+.5,pw-1,ph-1);
+  g.fillStyle=CSS('muted'); g.font=`12px ${CSS('f-body')}`;
+  if(o.xlabel){ g.textAlign='center'; g.textBaseline='bottom'; g.fillText(o.xlabel,ml+pw/2,H-2); }
+  if(o.ylabel){ g.save(); g.translate(12,mt+ph/2); g.rotate(-PI/2); g.textAlign='center'; g.textBaseline='middle'; g.fillText(o.ylabel,0,0); g.restore(); }
+  const lg=cv.parentElement.querySelector('.legend');
+  if(lg){ const items=[]; (o.series||[]).forEach(s=>{ if(s.label) items.push(`<span><i style="background:${colr(s.color)}${s.dash?';opacity:.65':''}"></i>${s.label}</span>`); }); (o.legend||[]).forEach(l=>items.push(`<span><i class="pt" style="background:${colr(l.color)}"></i>${l.label}</span>`)); lg.innerHTML=items.join(''); }
+}
+const RO=new ResizeObserver(es=>es.forEach(e=>{ if(e.target._o) drawPlot(e.target,e.target._o); }));
+function redrawAll(){ document.querySelectorAll('canvas').forEach(c=>{ if(c._o) drawPlot(c,c._o); }); }
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',redrawAll);
+new MutationObserver(redrawAll).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+const P=(root,id,o)=>{ const cv=root.querySelector('#'+id); if(!cv) return; if(!cv._ro){ RO.observe(cv); cv._ro=1; } drawPlot(cv,o); };
+/* sombreado del semiplano derecho en el plano s */
+const rhpShade=(g,X,Y,b)=>{ const x0=X(0); if(x0<b.ml+b.pw){ g.fillStyle=CSS('shade'); g.fillRect(Math.max(x0,b.ml),b.mt,b.ml+b.pw-Math.max(x0,b.ml),b.ph); } };
+
+/* =============== controles =============== */
+function makeControls(host,pre,defs,onChange){
+  const v={};
+  const api={v,set(id,val){ const d=defs.find(x=>x.id===id); if(d&&d._set) d._set(val); },fire};
+  defs.forEach(d=>{
+    const row=document.createElement('div'); row.className='crow'; d._row=row; const id=`${pre}-${d.id}`;
+    if(d.type==='seg'){
+      v[d.id]=d.value;
+      row.innerHTML=`<div class="clab"><span>${d.label}</span></div><div class="seg" role="radiogroup" aria-label="${d.label.replace(/<[^>]+>/g,'')}">${d.options.map(([val,txt])=>`<button type="button" role="radio" id="${id}-${val}" data-v="${val}" aria-checked="${val===d.value}">${txt}</button>`).join('')}</div>`;
+      const bs=row.querySelectorAll('button'); bs.forEach(b=>b.onclick=()=>{ v[d.id]=b.dataset.v; bs.forEach(x=>x.setAttribute('aria-checked',String(x===b))); fire(); });
+      d._set=val=>{ v[d.id]=val; bs.forEach(x=>x.setAttribute('aria-checked',String(x.dataset.v===val))); };
+    } else if(d.type==='check'){
+      v[d.id]=!!d.value; row.innerHTML=`<label class="chk"><input type="checkbox" id="${id}" ${d.value?'checked':''}> ${d.label}</label>`;
+      const inp=row.querySelector('input'); inp.onchange=()=>{ v[d.id]=inp.checked; fire(); }; d._set=val=>{ v[d.id]=!!val; inp.checked=!!val; };
+    } else if(d.type==='num'){
+      v[d.id]=d.value; row.className='crow num'; row.innerHTML=`<label for="${id}">${d.label}</label><input type="number" id="${id}" value="${d.value}" step="${d.step||'any'}">`;
+      const inp=row.querySelector('input'); inp.oninput=()=>{ const x=parseFloat(inp.value); v[d.id]=isFinite(x)?x:0; fire(); }; d._set=val=>{ v[d.id]=val; inp.value=val; };
+    } else if(d.type==='buttons'){
+      row.innerHTML=`<div class="clab"><span>${d.label}</span></div><div class="btns">${d.items.map((it,i)=>`<button type="button" class="btn" id="${id}-${i}" data-i="${i}">${it[0]}</button>`).join('')}</div>`;
+      row.querySelectorAll('button').forEach(b=>b.onclick=()=>{ d.items[+b.dataset.i][1](api); fire(); });
+    } else {
+      const toPos=x=>d.log?Math.round(1000*Math.log(x/d.min)/Math.log(d.max/d.min)):x;
+      const fromPos=p=>d.log?+fsigNum(d.min*Math.pow(d.max/d.min,p/1000)):+p;
+      v[d.id]=d.value;
+      row.innerHTML=`<div class="clab"><label for="${id}">${d.label}</label><output for="${id}"></output></div><input type="range" id="${id}" min="${d.log?0:d.min}" max="${d.log?1000:d.max}" step="${d.log?1:d.step}" value="${toPos(d.value)}">`;
+      const inp=row.querySelector('input'), out=row.querySelector('output');
+      const show=()=>{ out.innerHTML=(d.log?fsig(v[d.id],3):fmt(v[d.id],d.dec??2))+(d.unit?` <span class="u">${d.unit}</span>`:''); };
+      inp.oninput=()=>{ v[d.id]=fromPos(inp.value); show(); fire(); };
+      d._set=val=>{ v[d.id]=val; inp.value=toPos(val); show(); }; show();
+    }
+    host.appendChild(row);
+  });
+  function vis(){ defs.forEach(d=>{ if(d.showIf) d._row.hidden=!d.showIf(v); }); }
+  function fire(){ vis(); onChange(v); }
+  vis(); return api;
+}
+function fsigNum(x){ if(x===0) return 0; const e=Math.floor(Math.log10(Math.abs(x))); const f=Math.pow(10,e-2); return Math.round(x/f)*f; }
+
+/* =============== plantilla de módulo =============== */
+function layout(o){
+  const plots=(o.plots||[]).map(p=>`<figure class="plot ${p.cls||''}" id="${p.id}-f"><figcaption><b>${p.cap}</b>${p.sub?`<span>${p.sub}</span>`:''}</figcaption><canvas id="${p.id}" role="img" aria-label="${p.cap}"></canvas><div class="legend"></div></figure>`).join('');
+  const qs=(o.practice||[]).map(([q,a])=>`<details><summary>${q}</summary><p>${a}</p></details>`).join('');
+  return `<article class="mod">
+  <header class="mh"><div class="eyebrow">Unidad ${o.unit} · Subtemática ${o.code}</div><h1>${o.title}</h1><p class="lead">${o.lead}</p></header>
+  <div class="case"><b>Caso</b><p>${o.caso}</p></div>
+  <section class="theory"><div class="txt">${o.theory}</div><div class="formulas"><div class="ft">Fórmulas clave</div>${o.formulas}</div></section>
+  ${explHTML(o.code)}${o.before||''}
+  <section class="lab"><div class="lt"><h2>${o.labTitle||'Herramienta interactiva'}</h2><span>Cambia los datos y mira cómo cambian los resultados.</span></div><div class="ctl" id="ctl"></div><div class="plots ${o.plotsCls||''}">${o.work?'<div id="work" class="work"></div>':''}${plots}<div id="kpis" class="kpis"></div></div></section>
+  <section class="calc"><h2>Cálculo con tus valores</h2><div id="calc"></div></section>
+  ${o.after||''}
+  <section class="practice"><h2>${o.practiceTitle||'Para practicar'}</h2>${qs}</section>
+  </article>`;
+}
+const eq=(f,s)=>`<div class="eq">${f}${s?`<small>${s}</small>`:''}</div>`;
+const step=(l,e)=>`<div class="step"><div class="sl">${l}</div><div class="se">${e}</div></div>`;
+const kpi=(k,v)=>`<div class="kpi"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+const pill=(cls,txt)=>`<span class="pill ${cls}">${txt}</span>`;
+function show(root,id,on){ const el=root.querySelector('#'+id+'-f'); if(el) el.hidden=!on; }
+
+/* =============== utilidades de gestión =============== */
+const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+function erf(x){ const t=1/(1+0.3275911*Math.abs(x)); const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x); return x>=0?y:-y; }
+const Phi=z=>0.5*(1+erf(z/Math.SQRT2));
+function invPhi(p){ p=clamp(p,1e-12,1-1e-12); const a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.3577518672690,-30.66479806614716,2.506628277459239],b=[-54.47609879822406,161.5858368580409,-155.6989798598866,66.80131188771972,-13.28068155288572],c=[-0.007784894002430293,-0.3223964580411365,-2.400758277161838,-2.549732539343734,4.374664141464968,2.938163982698783],d=[0.007784695709041462,0.3224671290700398,2.445134137142996,3.754408661907416],pl=0.02425;
+  if(p<pl){ const q=Math.sqrt(-2*Math.log(p)); return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  if(p<=1-pl){ const q=p-0.5,r=q*q; return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1); }
+  const q=Math.sqrt(-2*Math.log(1-p)); return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+function gaussGen(seed){ const r=lcg(seed); return ()=>{ let u=r()||1e-9, v=r(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*PI*v); }; }
+const money=x=>'$'+fmt(x,1)+' M';
+function editTable(host,pre,cols,rows,onChange,opts={}){
+  function render(){
+    host.innerHTML=`<div class="tbl"><table class="et"><tr>${cols.map(c=>`<th>${c.label}</th>`).join('')}${opts.noDel?'':'<th></th>'}</tr>${rows.map((r,i)=>`<tr>${cols.map(c=>{ const id=`${pre}-${i}-${c.key}`;
+      if(c.type==='num') return `<td><input type="number" id="${id}" data-i="${i}" data-k="${c.key}" value="${r[c.key]}" step="${c.step||'any'}" style="width:${c.w||80}px" aria-label="${esc(c.label)}"></td>`;
+      if(c.type==='check') return `<td><input type="checkbox" id="${id}" data-i="${i}" data-k="${c.key}" ${r[c.key]?'checked':''} aria-label="${esc(c.label)}"></td>`;
+      if(c.type==='select') return `<td><select id="${id}" data-i="${i}" data-k="${c.key}" aria-label="${esc(c.label)}">${c.options.map(o=>`<option ${o===r[c.key]?'selected':''}>${o}</option>`).join('')}</select></td>`;
+      return `<td><input type="text" id="${id}" data-i="${i}" data-k="${c.key}" value="${esc(r[c.key])}" style="width:${c.w||170}px" aria-label="${esc(c.label)}"></td>`; }).join('')}${opts.noDel?'':`<td><button type="button" class="del" data-del="${i}" aria-label="Eliminar fila">×</button></td>`}</tr>`).join('')}</table></div>${opts.noAdd?'':`<button type="button" class="btn" id="${pre}-add" style="margin-top:8px">+ Agregar fila</button>`}`;
+    host.querySelectorAll('input,select').forEach(el=>{ const ev=(el.type==='checkbox'||el.tagName==='SELECT')?'change':'input'; el.addEventListener(ev,()=>{ const r=rows[+el.dataset.i], k=el.dataset.k, c=cols.find(x=>x.key===k); r[k]=el.type==='checkbox'?el.checked:c.type==='num'?(parseFloat(el.value)||0):el.value; onChange(rows); }); });
+    host.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ rows.splice(+b.dataset.del,1); render(); onChange(rows); });
+    const add=host.querySelector(`#${pre}-add`); if(add) add.onclick=()=>{ rows.push(opts.blank()); render(); onChange(rows); };
+  }
+  render(); return {render};
+}
+function classifier(host,pre,items,cats,onDone){
+  const ans=items.map(()=>null);
+  host.innerHTML=`<div class="clsf">${items.map((it,i)=>`<div class="ci" id="${pre}-r${i}"><span>${it[0]}</span><div class="seg" role="radiogroup" aria-label="${esc(it[0])}">${cats.map(c=>`<button type="button" role="radio" aria-checked="false" data-i="${i}" data-c="${c[0]}">${c[1]}</button>`).join('')}</div><em></em></div>`).join('')}</div><div class="btns" style="margin-top:10px"><button type="button" class="btn" id="${pre}-chk">Revisar respuestas</button><button type="button" class="btn" id="${pre}-rst">Reiniciar</button></div><p class="note" id="${pre}-res"></p>`;
+  host.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{ const i=+b.dataset.i; ans[i]=b.dataset.c; b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-checked',String(x===b))); });
+  host.querySelector(`#${pre}-chk`).onclick=()=>{ let ok=0; items.forEach((it,i)=>{ const row=host.querySelector(`#${pre}-r${i}`), em=row.querySelector('em'); const good=ans[i]===it[1]; if(good) ok++; row.dataset.st=ans[i]==null?'':good?'ok':'bad'; em.textContent=ans[i]==null?'sin responder':good?'correcto':'era: '+cats.find(c=>c[0]===it[1])[1]+(it[2]?'. '+it[2]:''); }); host.querySelector(`#${pre}-res`).textContent=`Acertaste ${ok} de ${items.length} (${Math.round(ok/items.length*100)} %).`; if(onDone) onDone(ok); };
+  host.querySelector(`#${pre}-rst`).onclick=()=>classifier(host,pre,items,cats,onDone);
+}
+
+/* =============== explicación de fórmulas =============== */
+const E=(n,f,d,v)=>({n,f,d,v});
+const EXPL={
+m11:[
+ E('Costo total de la calidad','CTC = C<sub>p</sub> + C<sub>e</sub> + C<sub>fi</sub> + C<sub>fe</sub>','Suma de lo que se gasta en evitar errores, en revisarlos y en lo que cuestan cuando ocurren.',[['C<sub>p</sub>','costos de prevención: capacitación, mantenimiento preventivo, protocolos','$'],['C<sub>e</sub>','costos de evaluación: auditorías, inspecciones, calibraciones','$'],['C<sub>fi</sub>','fallas internas: reprocesos, exámenes repetidos, reesterilización','$'],['C<sub>fe</sub>','fallas externas: infecciones, reingresos, glosas, demandas','$']]),
+ E('Costo de la no calidad','%CNC = (C<sub>fi</sub> + C<sub>fe</sub>)/CTC·100','Qué parte del costo de calidad se va en errores. Es el número que más convence a la gerencia.',[['%CNC','porcentaje de costo de no calidad','%']]),
+ E('Modelo de fallas','F(P) = F<sub>0</sub>·e<sup>−P/P<sub>0</sub></sup>','Supone que cada peso invertido en prevención reduce las fallas, pero con rendimientos decrecientes.',[['F','costo anual de fallas','$ M'],['F<sub>0</sub>','costo de fallas sin prevención','$ M'],['P','inversión anual en prevención','$ M'],['P<sub>0</sub>','inversión que reduce las fallas al 37 %','$ M']]),
+ E('Prevención óptima','P* = P<sub>0</sub>·ln(F<sub>0</sub>/P<sub>0</sub>)','Punto donde el costo total es mínimo: un peso más en prevención ahorra exactamente un peso en fallas.',[['P*','inversión óptima en prevención','$ M'],['ln','logaritmo natural','—']])],
+m12:[
+ E('Indicador','Indicador = Numerador/Denominador·100','Todo indicador tiene una fórmula, una meta, una frecuencia y un responsable.',[['Numerador','casos que cumplen la condición','unidades'],['Denominador','total de casos evaluados','unidades']]),
+ E('Eficacia','Eficacia = R/M·100','¿Se logró lo que se planeó?',[['R','resultado alcanzado (mantenimientos hechos)','unidades'],['M','meta programada','unidades']]),
+ E('Eficiencia','Eficiencia = (R/R<sub>u</sub>)/(M/R<sub>p</sub>)·100','¿Cuánto rindieron los recursos frente a lo previsto? Más de 100 % significa que se hizo más con menos.',[['R<sub>u</sub>','recursos usados (horas, dinero)','h o $'],['R<sub>p</sub>','recursos programados','h o $']]),
+ E('Efectividad','Efectividad = (Eficacia + Eficiencia)/2','Combina lograr el resultado y hacerlo con buen uso de recursos.',[['Efectividad','puntaje combinado','%']])],
+m13:[
+ E('Cumplimiento por cláusula','C<sub>k</sub> = Σ puntos/(2·n<sub>k</sub>)·100','Cada requisito se califica 0 (no cumple), 1 (parcial) o 2 (cumple).',[['C<sub>k</sub>','cumplimiento de la cláusula k','%'],['n<sub>k</sub>','número de requisitos evaluados en la cláusula','—'],['2','puntaje máximo por requisito','—']]),
+ E('Cumplimiento global','C = Σ todos los puntos/(2·N)·100','Promedio ponderado de todos los requisitos.',[['N','total de requisitos evaluados','—']]),
+ E('Agrupación PHVA','P: cláusulas 4–7 · H: 8 · V: 9 · A: 10','La estructura de alto nivel de ISO 9001:2015 sigue el ciclo de Deming.',[['P','planear','—'],['H','hacer','—'],['V','verificar','—'],['A','actuar','—']])],
+m21:[
+ E('Puntaje ponderado','Puntaje = Σ w<sub>i</sub>·c<sub>i</sub>','Cada factor pesa según su importancia y se califica según qué tan bien lo maneja la organización.',[['w<sub>i</sub>','peso del factor (de 0 a 1)','—'],['c<sub>i</sub>','calificación de 1 a 4','—'],['Puntaje','resultado de la matriz (1 a 4; 2,5 es el promedio)','—']]),
+ E('Condición de los pesos','Σ w<sub>i</sub> = 1','Los pesos se reparten entre todos los factores de la matriz.',[['Σ w<sub>i</sub>','suma de pesos','—']]),
+ E('Calificación en MEFI','Debilidad mayor 1 · menor 2 · Fortaleza menor 3 · mayor 4','Escala de la matriz de evaluación de factores internos.',[['c<sub>i</sub>','calificación','1 a 4']]),
+ E('Calificación en MEFE','Respuesta pobre 1 · promedio 2 · buena 3 · superior 4','Qué tan bien responde la organización a cada oportunidad o amenaza.',[['c<sub>i</sub>','calificación','1 a 4']])],
+m22:[
+ E('Horas de mantenimiento preventivo','H<sub>prev</sub> = Σ N<sub>c</sub>·h<sub>c</sub>','Equipos de cada clase de riesgo por las horas anuales que requiere cada uno.',[['N<sub>c</sub>','número de equipos de la clase c (I, IIa, IIb, III)','equipos'],['h<sub>c</sub>','horas de preventivo por equipo al año','h/equipo']]),
+ E('Carga total','H<sub>tot</sub> = H<sub>prev</sub>·(1 + f<sub>c</sub>)','Se suma el correctivo como porcentaje del preventivo.',[['f<sub>c</sub>','factor de correctivo','fracción']]),
+ E('Horas productivas por técnico','H<sub>prod</sub> = semanas·horas·productividad','No todas las horas contratadas se dedican a equipos: hay capacitación, reuniones, desplazamientos.',[['semanas','semanas laborales al año (48)','sem'],['horas','horas por semana (44 en Colombia, 2026)','h'],['productividad','fracción de tiempo útil','—']]),
+ E('Personal necesario','Técnicos = ⌈H<sub>tot</sub>/H<sub>prod</sub>⌉ · Coordinadores = ⌈Técnicos/s⌉','Se redondea hacia arriba porque no se contrata medio técnico.',[['⌈ ⌉','redondeo hacia arriba','—'],['s','tramo de control: personas a cargo de un coordinador','personas']])],
+m23:[
+ E('Tasa de servicio','μ = 60/t<sub>s</sub>','Cuántos pacientes atiende un médico por hora.',[['μ','tasa de servicio','pacientes/h'],['t<sub>s</sub>','tiempo promedio de atención','min']]),
+ E('Carga ofrecida y utilización','A = λ/μ · ρ = A/c','A dice cuántos médicos estarían ocupados en promedio; ρ es la fracción de tiempo ocupada de cada uno.',[['λ','tasa de llegada de pacientes','pacientes/h'],['A','carga en erlangs','—'],['c','número de médicos','—'],['ρ','utilización (debe ser menor que 1)','—']]),
+ E('Probabilidad de esperar (Erlang C)','C = (A<sup>c</sup>/c!)·(c/(c − A)) / [Σ<sub>k=0</sub><sup>c−1</sup> A<sup>k</sup>/k! + (A<sup>c</sup>/c!)·(c/(c − A))]','Probabilidad de que un paciente que llega encuentre a todos los médicos ocupados.',[['C','probabilidad de espera','—'],['k!','factorial de k','—']]),
+ E('Espera promedio en cola','W<sub>q</sub> = C/(cμ − λ)','Tiempo medio que un paciente espera antes de ser atendido.',[['W<sub>q</sub>','espera en cola','h']]),
+ E('Ley de Little','L<sub>q</sub> = λ·W<sub>q</sub>','Pacientes esperando en promedio. Vale para cualquier proceso estable.',[['L<sub>q</sub>','pacientes en cola','pacientes']]),
+ E('Espera mayor que t','P(W > t) = C·e<sup>−(cμ − λ)t</sup>','Fracción de pacientes que espera más de un tiempo meta.',[['t','tiempo meta (por ejemplo 30 min)','h']])],
+m31:[
+ E('Porcentaje de Pareto','%<sub>i</sub> = f<sub>i</sub>/Σf·100','Peso de cada causa sobre el total. Se ordenan de mayor a menor.',[['f<sub>i</sub>','frecuencia de la causa i','casos'],['Σf','total de casos','casos']]),
+ E('Porcentaje acumulado','%acum<sub>k</sub> = Σ<sub>i≤k</sub> %<sub>i</sub>','Las causas que suman hasta cerca del 80 % son los “pocos vitales”.',[['%acum','porcentaje acumulado','%']]),
+ E('Línea central de la gráfica p','p̄ = Σd/Σn','Proporción promedio de defectos del proceso estable.',[['d','unidades defectuosas por día','unidades'],['n','tamaño de la muestra diaria','unidades'],['p̄','proporción media','fracción']]),
+ E('Límites de control','LCS = p̄ + 3√(p̄(1 − p̄)/n) · LCI = p̄ − 3√(p̄(1 − p̄)/n)','Marcan la variación natural del proceso. Un punto fuera indica una causa especial.',[['LCS','límite de control superior','fracción'],['LCI','límite de control inferior (mínimo 0)','fracción'],['3','tres desviaciones estándar (99,73 %)','—']])],
+m32:[
+ E('Reducción de tiempo','Reducción = (T<sub>antes</sub> − T<sub>después</sub>)/T<sub>antes</sub>·100','Mejora porcentual del indicador.',[['T<sub>antes</sub>','tiempo total antes de la mejora','min'],['T<sub>después</sub>','tiempo total después','min']]),
+ E('Proporción de valor agregado','%VA = T<sub>VA</sub>/T<sub>total</sub>·100','Qué fracción del tiempo realmente sirve al paciente.',[['T<sub>VA</sub>','tiempo de actividades que agregan valor','min']]),
+ E('Puntaje 5S','5S% = Σ calificaciones/20·100','Cada S se califica de 0 a 4 en la auditoría.',[['20','puntaje máximo (5 S × 4)','—']])],
+m33:[
+ E('Takt time','Takt = tiempo disponible/demanda','Ritmo al que hay que atender para cumplir con la demanda.',[['Takt','tiempo entre salidas que exige la demanda','min/paciente'],['tiempo disponible','minutos de operación por día','min'],['demanda','pacientes por día','pacientes']]),
+ E('Tiempo de ciclo efectivo','TC<sub>ef</sub> = TC/recursos','Con varios recursos en paralelo, el paso entrega un paciente cada TC/recursos minutos.',[['TC','tiempo de ciclo de un recurso','min'],['recursos','personas o equipos en paralelo','—']]),
+ E('Lead time','LT = Σ(TC + espera)','Tiempo total que el paciente pasa en el proceso.',[['LT','lead time','min'],['espera','tiempo de espera antes del paso','min']]),
+ E('Eficiencia del ciclo','PCE = VA/LT·100','Porcentaje del tiempo total que agrega valor. En salud suele estar por debajo del 10 %.',[['VA','suma de tiempos que agregan valor','min'],['PCE','eficiencia del ciclo del proceso','%']])],
+m41:[
+ E('Valor presente neto','VPN = −I + Σ FN<sub>t</sub>/(1 + i)<sup>t</sup>','Trae a hoy todos los flujos futuros. Si es positivo, el proyecto genera valor.',[['I','inversión inicial','$ M'],['FN<sub>t</sub>','flujo neto del año t (ahorro − costo)','$ M'],['i','tasa de descuento','fracción'],['t','año','—']]),
+ E('Tasa interna de retorno','VPN(TIR) = 0','Tasa a la que el proyecto ni gana ni pierde. Se compara con la tasa exigida.',[['TIR','tasa interna de retorno','%']]),
+ E('Periodo de recuperación','PRI: primer año en que Σ FN ≥ I','Cuánto tarda en devolverse la inversión.',[['PRI','periodo de recuperación','años']]),
+ E('Relación beneficio/costo','B/C = VP(beneficios)/VP(costos)','Mayor que 1 indica que los beneficios superan los costos.',[['VP','valor presente','$ M']])],
+m42:[
+ E('Pase hacia adelante','ES = máx(EF de las predecesoras) · EF = ES + d','Fechas más tempranas de inicio y fin.',[['ES','inicio más temprano','sem'],['EF','fin más temprano','sem'],['d','duración de la actividad','sem']]),
+ E('Pase hacia atrás','LF = mín(LS de las sucesoras) · LS = LF − d','Fechas más tardías sin retrasar el proyecto.',[['LS','inicio más tardío','sem'],['LF','fin más tardío','sem']]),
+ E('Holgura','H = LS − ES','Cuánto puede retrasarse una actividad sin mover la fecha final. Holgura 0 = ruta crítica.',[['H','holgura total','sem']]),
+ E('Variaciones del valor ganado','SV = EV − PV · CV = EV − AC','Negativo en SV: atrasado. Negativo en CV: sobrecosto.',[['PV','valor planeado: lo que debía estar hecho','$ M'],['EV','valor ganado: lo hecho, valorado al presupuesto','$ M'],['AC','costo real gastado','$ M']]),
+ E('Índices de desempeño','SPI = EV/PV · CPI = EV/AC','Menor que 1: peor de lo planeado.',[['SPI','índice de cronograma','—'],['CPI','índice de costo','—']]),
+ E('Pronóstico','EAC = BAC/CPI · ETC = EAC − AC · VAC = BAC − EAC','Cuánto costará al final si sigue igual.',[['BAC','presupuesto total','$ M'],['EAC','estimado a la conclusión','$ M'],['ETC','estimado para terminar','$ M'],['VAC','variación al terminar','$ M']])],
+m43:[
+ E('Defectos por millón de oportunidades','DPMO = D/(U·O)·10⁶','Normaliza los defectos para comparar procesos distintos.',[['D','defectos encontrados','—'],['U','unidades revisadas','—'],['O','oportunidades de defecto por unidad','—']]),
+ E('Rendimiento','Y = 1 − D/(U·O)','Fracción de oportunidades sin defecto.',[['Y','rendimiento (yield)','fracción']]),
+ E('Nivel sigma','σ<sub>nivel</sub> = Φ⁻¹(Y) + 1,5','Cuántas desviaciones estándar caben antes del límite, sumando el corrimiento de 1,5 σ a largo plazo.',[['Φ⁻¹','inversa de la distribución normal estándar','—'],['1,5','corrimiento convencional de Motorola','σ']]),
+ E('Capacidad potencial','C<sub>p</sub> = (LSE − LIE)/(6σ)','Compara el ancho de la especificación con el ancho natural del proceso.',[['LSE','límite superior de especificación','min'],['LIE','límite inferior de especificación','min'],['σ','desviación estándar del proceso','min']]),
+ E('Capacidad real','C<sub>pk</sub> = mín((LSE − μ)/(3σ), (μ − LIE)/(3σ))','Considera si el proceso está centrado. C<sub>pk</sub> ≥ 1,33 se considera capaz.',[['μ','media del proceso','min']])]
+};
+function explHTML(code){
+  const a=EXPL['m'+String(code).replace('.','')]; if(!a) return '';
+  return `<section class="expl"><h2>Qué significa cada fórmula</h2><div class="egrid">${a.map(e=>`<div class="ecard"><div class="en">${e.n}</div><div class="eq">${e.f}</div><p>${e.d}</p><table class="vt">${e.v.map(r=>`<tr><td class="sym">${r[0]}</td><td>${r[1]}</td><td class="un">${r[2]}</td></tr>`).join('')}</table></div>`).join('')}</div></section>`;
+}
+
+const MODS={};
+
+/* ---------- 1.1 ---------- */
+MODS.m11={unit:1,code:'1.1',title:'Evolución histórica de la calidad',nav:'Evolución histórica',
+init(root){
+  const T=[['~1900','Taylor','Inspección al final de la línea: separar lo bueno de lo malo.'],['1924','Shewhart','Gráficas de control: distinguir variación normal de causas especiales.'],['1946','ISO','Se funda la Organización Internacional de Normalización.'],['1950','Deming','Enseña control estadístico en Japón; populariza el ciclo PHVA.'],['1951','Juran','Trilogía: planificación, control y mejora. Costos de la calidad.'],['1961','Ishikawa','Círculos de calidad y diagrama causa-efecto.'],['1979','Crosby','Cero defectos: hacerlo bien desde la primera vez. Norma BS 5750.'],['1986','Motorola','Six Sigma y el ciclo DMAIC.'],['1987','ISO 9000','Primera familia de normas internacionales de gestión de calidad.'],['1990s','Lean / TQM','Toyota llega a hospitales como Lean Healthcare; calidad total.'],['2000','ISO 9001:2000','Enfoque basado en procesos.'],['2015','ISO 9001:2015','Pensamiento basado en riesgos y contexto de la organización.']];
+  root.innerHTML=layout({unit:1,code:'1.1',title:this.title,
+    lead:'La calidad pasó de revisar el producto terminado a gestionar toda la organización. Ese recorrido explica por qué hoy los hospitales hablan de procesos, indicadores, riesgos y mejora continua.',
+    caso:'Un hospital de 200 camas quiere saber cuánto le cuesta la mala calidad. Repite exámenes de laboratorio, reesteriliza instrumental, atiende infecciones asociadas a la atención y recibe glosas de las EPS. La gerencia se pregunta cuánto debería invertir en prevención (capacitación, mantenimiento preventivo, protocolos) para que el costo total sea el menor posible.',
+    theory:`<p>Las etapas suelen resumirse así: <b>inspección</b> (separar productos defectuosos), <b>control estadístico</b> (medir la variación del proceso), <b>aseguramiento</b> (normas y procedimientos que dan confianza), <b>calidad total</b> (toda la organización participa) y <b>gestión por procesos y riesgos</b>, que es donde está la ISO 9001:2015.</p>
+    <p>Juran y Crosby mostraron que la calidad se puede expresar en dinero. Los <b>costos de calidad</b> se dividen en cuatro grupos: prevención, evaluación, fallas internas (se detectan antes de llegar al paciente) y fallas externas (las sufre el paciente). Invertir en prevención reduce las fallas, pero llega un punto en que gastar más ya no compensa.</p>
+    <p>En salud colombiana estas ideas aparecen en el Sistema Obligatorio de Garantía de la Calidad (SOGCS): habilitación, auditoría para el mejoramiento, acreditación y sistema de información para la calidad.</p>`,
+    formulas: eq('CTC = C<sub>p</sub> + C<sub>e</sub> + C<sub>fi</sub> + C<sub>fe</sub>')+eq('%CNC = (C<sub>fi</sub> + C<sub>fe</sub>)/CTC · 100')+eq('F(P) = F<sub>0</sub>·e<sup>−P/P<sub>0</sub></sup>','modelo de fallas')+eq('P* = P<sub>0</sub>·ln(F<sub>0</sub>/P<sub>0</sub>)','prevención óptima'),
+    before:`<section><h2>Línea de tiempo</h2><div class="tline">${T.map(x=>`<div class="tl"><b>${x[0]}</b><span>${x[1]}</span><p>${x[2]}</p></div>`).join('')}</div></section>`,
+    plots:[{id:'p1',cap:'Costo de la calidad vs. inversión en prevención',sub:'millones de pesos al año'}],
+    practiceTitle:'Casos y ejercicios',
+    practice:[
+      ['Caso para resolver: clasifica estos costos de un servicio de esterilización: capacitación en lavado (12 M), indicadores biológicos (8 M), reesterilización de cajas (15 M), cirugía cancelada por instrumental contaminado (40 M).','Prevención: 12 M. Evaluación: 8 M. Falla interna: 15 M. Falla externa: 40 M (afecta al paciente). CTC = 75 M y %CNC = (15 + 40)/75 = 73 %. La mayor parte del costo está en errores: conviene invertir más en prevención.'],
+      ['Ejercicio: con F₀ = 400 M y P₀ = 80 M, ¿cuál es la prevención óptima?','P* = 80·ln(400/80) = 80·1,609 = 128,8 M. Con esa inversión las fallas bajan a 400·e<sup>−1,61</sup> = 80 M.'],
+      ['Ejercicio: si hoy se invierten 40 M en prevención (con los datos anteriores y 60 M de evaluación), ¿cuánto se ahorra al pasar al óptimo?','Hoy: 40 + 60 + 400·e<sup>−0,5</sup> = 40 + 60 + 242,6 = 342,6 M. Óptimo: 128,8 + 60 + 80 = 268,8 M. Ahorro ≈ 73,8 M al año.'],
+      ['Pregunta: ¿qué aportó Shewhart que no tenía la inspección de Taylor?','Shewhart usó la estadística para entender la variación del proceso mientras ocurre, en lugar de revisar el producto al final. Eso permite prevenir defectos y no solo detectarlos.'],
+      ['Pregunta: ¿qué cambió en ISO 9001:2015 respecto a la versión 2008?','Se incorporaron el contexto de la organización, las partes interesadas y el pensamiento basado en riesgos; se dejó de exigir manual de calidad y representante de la dirección; y se adoptó la estructura de alto nivel común a otras normas ISO.']]
+  });
+  const ctl=makeControls($('#ctl',root),'g11',[
+    {id:'F0',label:'Costo de fallas sin prevención F₀',min:50,max:1000,step:10,value:400,unit:'$ M',dec:0},
+    {id:'P0',label:'Eficacia de la prevención P₀',min:20,max:300,step:5,value:80,unit:'$ M',dec:0},
+    {id:'Ce',label:'Costos de evaluación',min:10,max:200,step:5,value:60,unit:'$ M',dec:0},
+    {id:'P',label:'Inversión actual en prevención',min:0,max:600,step:5,value:40,unit:'$ M',dec:0},
+    {id:'fe',label:'Parte de las fallas que llega al paciente',min:0,max:100,step:5,value:60,unit:'%',dec:0}],upd);
+  function upd(v){
+    const F=p=>v.F0*Math.exp(-p/v.P0), C=p=>p+v.Ce+F(p), Ps=v.F0>v.P0?v.P0*Math.log(v.F0/v.P0):0;
+    const x=[],a=[],b=[],c=[]; const Xm=Math.max(600,Ps*1.6); for(let i=0;i<=300;i++){ const p=Xm*i/300; x.push(p); a.push(p); b.push(F(p)); c.push(C(p)); }
+    P(root,'p1',{series:[{x,y:a,color:'s1',dash:[6,4],label:'prevención'},{x,y:b,color:'s2',dash:[6,4],label:'fallas (internas + externas)'},{x,y:c,color:'s3',label:'costo total'}],points:[{x:v.P,y:C(v.P),color:'s4',text:'actual'},{x:Ps,y:C(Ps),shape:'ring',color:'s3',text:'óptimo'}],xlabel:'inversión en prevención ($ M/año)',ylabel:'$ M/año',yzero:true});
+    const Fa=F(v.P), Fi=Fa*(1-v.fe/100), Fe=Fa*v.fe/100, tot=C(v.P);
+    $('#kpis',root).innerHTML=kpi('Costo total actual',money(tot))+kpi('Costo de no calidad',fmt(Fa/tot*100,1)+' %')+kpi('Prevención óptima',money(Ps))+kpi('Ahorro posible',money(tot-C(Ps)));
+    $('#calc',root).innerHTML=`<div class="steps">
+      ${step('1. Fallas con la inversión actual',`F = ${fmt(v.F0,0)}·e<sup>−${fmt(v.P,0)}/${fmt(v.P0,0)}</sup> = ${B(money(Fa))}`)}
+      ${step('2. Reparto de las fallas',`internas = ${B(money(Fi))} &nbsp; externas = ${B(money(Fe))}`)}
+      ${step('3. Costo total de la calidad',`CTC = ${fmt(v.P,0)} + ${fmt(v.Ce,0)} + ${fmt(Fi,1)} + ${fmt(Fe,1)} = ${B(money(tot))}`)}
+      ${step('4. Costo de la no calidad',`${fr(fmt(Fa,1),fmt(tot,1))}·100 = ${B(fmt(Fa/tot*100,1)+' %')}`)}
+      ${step('5. Prevención óptima',`P* = ${fmt(v.P0,0)}·ln(${fr(fmt(v.F0,0),fmt(v.P0,0))}) = ${B(money(Ps))}`)}
+      ${step('6. Costo total en el óptimo',`${fmt(Ps,1)} + ${fmt(v.Ce,0)} + ${fmt(F(Ps),1)} = ${B(money(C(Ps)))}`)}
+    </div><p class="note">El modelo es didáctico: en la realidad P₀ se estima con datos históricos del propio hospital.</p>`;
+  }
+  ctl.fire();
+}};
+
+/* ---------- 1.2 ---------- */
+MODS.m12={unit:1,code:'1.2',title:'Sistemas de gestión de calidad',nav:'Sistemas de gestión de calidad',
+init(root){
+  const ITEMS=[['Direccionamiento estratégico','E'],['Gestión de la calidad y acreditación','E'],['Gestión del riesgo clínico','E'],['Urgencias','M'],['Hospitalización','M'],['Cirugía','M'],['Consulta externa','M'],['Gestión de tecnología biomédica','A','Mantiene los equipos que usan los procesos misionales.'],['Talento humano','A'],['Compras y suministros','A'],['Facturación','A'],['Mantenimiento de infraestructura','A']];
+  root.innerHTML=layout({unit:1,code:'1.2',title:this.title,
+    lead:'Un sistema de gestión de calidad (SGC) es el conjunto de políticas, procesos, recursos e indicadores que una organización usa para cumplir de forma consistente lo que necesitan sus usuarios. Se organiza en un mapa de procesos y se controla con indicadores.',
+    caso:'El departamento de ingeniería biomédica de una clínica programó 120 mantenimientos preventivos en el trimestre con 480 horas de técnico. Al cierre se hicieron 102 usando 450 horas. La auditoría interna pide calcular eficacia, eficiencia y efectividad, y ubicar el proceso en el mapa de procesos de la clínica.',
+    theory:`<p>Un SGC define <b>qué</b> se hace (procesos), <b>quién</b> lo hace (responsables), <b>cómo</b> se hace (procedimientos e instructivos), <b>con qué</b> (recursos) y <b>cómo se sabe que funciona</b> (indicadores y auditorías).</p>
+    <ul><li><b>Procesos estratégicos:</b> fijan el rumbo. Direccionamiento, calidad, gestión del riesgo.</li>
+    <li><b>Procesos misionales:</b> generan el servicio que recibe el paciente. Urgencias, hospitalización, cirugía, consulta.</li>
+    <li><b>Procesos de apoyo:</b> dan los recursos. Talento humano, compras, tecnología biomédica, facturación.</li>
+    <li>Muchos mapas agregan <b>procesos de evaluación</b>: auditoría interna, control interno.</li></ul>
+    <p>Un buen indicador tiene nombre, fórmula, meta, frecuencia, fuente de datos y responsable. Las tres preguntas básicas: ¿se logró? (eficacia), ¿con cuánto? (eficiencia), ¿valió la pena? (efectividad).</p>`,
+    formulas: eq('Indicador = Numerador/Denominador · 100')+eq('Eficacia = R/M · 100')+eq('Eficiencia = (R/R<sub>u</sub>)/(M/R<sub>p</sub>) · 100')+eq('Efectividad = (Eficacia + Eficiencia)/2'),
+    work:true,
+    plots:[{id:'p1',cap:'Indicadores del proceso',sub:'semáforo: verde ≥ 90 %, amarillo 75–90 %, rojo < 75 %'}],
+    practiceTitle:'Casos y ejercicios',
+    practice:[
+      ['Caso para resolver: el laboratorio clínico se propuso entregar 95 % de resultados urgentes en menos de 1 hora. En marzo hubo 1840 resultados urgentes y 1650 salieron a tiempo. ¿Cumple?','Indicador = 1650/1840·100 = 89,7 %. Eficacia frente a la meta = 89,7/95 = 94,4 %. No cumple la meta del 95 %; está en amarillo.'],
+      ['Ejercicio: se programaron 60 capacitaciones con $ 30 M y se hicieron 54 gastando $ 25 M. Calcula eficacia, eficiencia y efectividad.','Eficacia = 54/60 = 90 %. Eficiencia = (54/25)/(60/30) = 2,16/2 = 108 %. Efectividad = (90 + 108)/2 = 99 %.'],
+      ['Ejercicio: diseña un indicador para el proceso de gestión de tecnología biomédica.','Ejemplo: “Cumplimiento del plan de mantenimiento preventivo” = mantenimientos ejecutados/programados·100. Meta ≥ 95 %. Frecuencia mensual. Fuente: software de mantenimiento. Responsable: coordinador de biomédica.'],
+      ['Pregunta: ¿por qué la gestión de tecnología biomédica es de apoyo y no misional?','Porque el paciente no recibe el mantenimiento como servicio; lo recibe a través de urgencias, UCI o cirugía. Sin embargo, si falla, los misionales se detienen: por eso se vigila con indicadores críticos.']]
+  });
+  const ctl=makeControls($('#ctl',root),'g12',[
+    {type:'seg',id:'mode',label:'Actividad',options:[['ind','Calcular indicadores'],['map','Clasificar procesos']],value:'ind'},
+    {id:'M',label:'Mantenimientos programados',min:20,max:300,step:1,value:120,dec:0,showIf:v=>v.mode==='ind'},
+    {id:'R',label:'Mantenimientos ejecutados',min:0,max:300,step:1,value:102,dec:0,showIf:v=>v.mode==='ind'},
+    {id:'Rp',label:'Horas programadas',min:50,max:1000,step:5,value:480,unit:'h',dec:0,showIf:v=>v.mode==='ind'},
+    {id:'Ru',label:'Horas usadas',min:50,max:1000,step:5,value:450,unit:'h',dec:0,showIf:v=>v.mode==='ind'}],upd);
+  let last='';
+  function upd(v){
+    const w=$('#work',root);
+    show(root,'p1',v.mode==='ind');
+    if(v.mode==='map'){ if(last!=='map'){ w.innerHTML='<h4 style="margin-top:0">Ubica cada proceso de una clínica en el mapa</h4><div id="clsf"></div>'; classifier($('#clsf',root),'g12c',ITEMS,[['E','Estratégico'],['M','Misional'],['A','Apoyo']]); } $('#kpis',root).innerHTML=''; $('#calc',root).innerHTML='<p class="note">Clasifica los 12 procesos y presiona “Revisar respuestas”. Fíjate en la pregunta clave: ¿el paciente recibe directamente este servicio?</p>'; last='map'; return; }
+    last='ind'; w.innerHTML='';
+    const ef=v.R/v.M*100, ei=(v.R/v.Ru)/(v.M/v.Rp)*100, et=(ef+ei)/2;
+    const col=x=>x>=90?'s3':x>=75?'s4':'s2';
+    P(root,'p1',{series:[{x:[1],y:[ef],bars:true,color:col(ef)},{x:[2],y:[ei],bars:true,color:col(ei)},{x:[3],y:[et],bars:true,color:col(et)}],xcats:['Eficacia','Eficiencia','Efectividad'],xlim:[0.4,3.6],hlines:[{y:90,color:'s3',label:'90 %'},{y:75,color:'s4',label:'75 %'}],ylabel:'%',yzero:true});
+    const st=x=>x>=90?pill('ok','cumple'):x>=75?pill('warn','alerta'):pill('bad','crítico');
+    $('#kpis',root).innerHTML=kpi('Eficacia',fmt(ef,1)+' % '+st(ef))+kpi('Eficiencia',fmt(ei,1)+' % '+st(ei))+kpi('Efectividad',fmt(et,1)+' % '+st(et))+kpi('Horas por mantenimiento',fmt(v.Ru/Math.max(v.R,1),2)+' h');
+    $('#calc',root).innerHTML=`<div class="steps">
+      ${step('1. Eficacia',`${fr(fmt(v.R,0),fmt(v.M,0))}·100 = ${B(fmt(ef,1)+' %')}`)}
+      ${step('2. Rendimiento real',`${fr(fmt(v.R,0),fmt(v.Ru,0)+' h')} = ${B(fmt(v.R/v.Ru,4)+' mant/h')}`)}
+      ${step('3. Rendimiento programado',`${fr(fmt(v.M,0),fmt(v.Rp,0)+' h')} = ${B(fmt(v.M/v.Rp,4)+' mant/h')}`)}
+      ${step('4. Eficiencia',`${fr(fmt(v.R/v.Ru,4),fmt(v.M/v.Rp,4))}·100 = ${B(fmt(ei,1)+' %')}`)}
+      ${step('5. Efectividad',`${fr(fmt(ef,1)+' + '+fmt(ei,1),'2')} = ${B(fmt(et,1)+' %')}`)}
+    </div><p class="note">${ef<90&&ei>=100?'Se trabajó con buen rendimiento por hora, pero no se alcanzó la meta: probablemente faltaron horas asignadas o hubo equipos no disponibles para intervenir.':''}</p>`;
+  }
+  ctl.fire();
+}};
+
+/* ---------- 1.3 ---------- */
+MODS.m13={unit:1,code:'1.3',title:'ISO 9001:2015',nav:'ISO 9000:2015',
+init(root){
+  const Q=[[4,'Contexto de la organización',['Se analizó el contexto interno y externo (por ejemplo, con una DOFA)','Se identificaron las partes interesadas: pacientes, médicos, proveedores, INVIMA, secretaría de salud','Se definió el alcance del SGC y el mapa de procesos']],
+    [5,'Liderazgo',['La política de calidad está aprobada y comunicada','Los roles y responsabilidades están asignados por escrito','La dirección demuestra enfoque en el usuario']],
+    [6,'Planificación',['Existe una matriz de riesgos y oportunidades del proceso','Los objetivos de calidad son medibles y tienen responsable','Los cambios se planifican antes de hacerse']],
+    [7,'Apoyo',['El personal tiene la competencia y capacitación documentadas','Los equipos de medición (analizadores, simuladores) están calibrados','La información documentada está controlada (versiones, acceso)','La infraestructura y el ambiente de trabajo son adecuados']],
+    [8,'Operación',['Cada equipo tiene plan de mantenimiento preventivo','Se evalúa y controla a los proveedores externos','Las hojas de vida de los equipos están actualizadas','Los equipos fuera de servicio se identifican y retiran (salidas no conformes)']],
+    [9,'Evaluación del desempeño',['Los indicadores se miden y analizan','Se hacen auditorías internas programadas','La dirección revisa el sistema periódicamente']],
+    [10,'Mejora',['Las no conformidades tienen análisis de causa y acción correctiva','Se reportan eventos e incidentes de tecnovigilancia','Hay evidencia de mejora continua']]];
+  const DEF=[[2,1,2],[2,1,1],[1,1,0],[1,2,1,2],[2,1,1,2],[2,0,1],[1,2,0]];
+  root.innerHTML=layout({unit:1,code:'1.3',title:this.title,
+    lead:'La ISO 9001:2015 es la norma certificable de la familia ISO 9000. Establece los requisitos de un sistema de gestión de calidad con siete principios, enfoque a procesos, ciclo PHVA y pensamiento basado en riesgos.',
+    caso:'El departamento de ingeniería biomédica de un hospital quiere prepararse para la certificación. Antes de contratar a un auditor, hace un autodiagnóstico frente a las cláusulas 4 a 10. Califica cada requisito con 0 (no cumple), 1 (cumple parcialmente) o 2 (cumple).',
+    theory:`<p><b>Familia ISO 9000:</b> ISO 9000 (fundamentos y vocabulario), ISO 9001 (requisitos, la única certificable), ISO 9004 (éxito sostenido) e ISO 19011 (auditorías). En dispositivos médicos se usa además la ISO 13485.</p>
+    <p><b>Siete principios:</b> enfoque al cliente, liderazgo, compromiso de las personas, enfoque a procesos, mejora, toma de decisiones basada en evidencia y gestión de las relaciones.</p>
+    <div class="tbl"><table><tr><th>Cláusula</th><th>Tema</th><th>PHVA</th></tr><tr><td>1–3</td><td>Objeto, referencias, términos</td><td>—</td></tr><tr><td>4</td><td>Contexto de la organización</td><td>Planear</td></tr><tr><td>5</td><td>Liderazgo</td><td>Planear</td></tr><tr><td>6</td><td>Planificación</td><td>Planear</td></tr><tr><td>7</td><td>Apoyo</td><td>Planear / Hacer</td></tr><tr><td>8</td><td>Operación</td><td>Hacer</td></tr><tr><td>9</td><td>Evaluación del desempeño</td><td>Verificar</td></tr><tr><td>10</td><td>Mejora</td><td>Actuar</td></tr></table></div>`,
+    formulas: eq('C<sub>k</sub> = Σ puntos/(2·n<sub>k</sub>) · 100','por cláusula')+eq('C = Σ puntos/(2·N) · 100','global')+eq('P: 4–7 · H: 8 · V: 9 · A: 10'),
+    work:true,
+    plots:[{id:'p1',cap:'Cumplimiento por cláusula'}],
+    practiceTitle:'Casos y ejercicios',
+    practice:[
+      ['Caso para resolver: en la auditoría encuentran un monitor de signos vitales funcionando con la calibración vencida hace 4 meses. ¿Qué cláusula se incumple y qué se debe hacer?','Cláusula 7.1.5 (recursos de seguimiento y medición). Se registra una no conformidad, se retira el equipo, se evalúa si las mediciones anteriores pudieron afectar a pacientes, se calibra y se hace análisis de causa (por ejemplo, el cronograma de metrología no tenía alertas).'],
+      ['Ejercicio: una cláusula tiene 4 requisitos calificados 2, 1, 1 y 0. ¿Cuál es su cumplimiento?','(2 + 1 + 1 + 0)/(2·4)·100 = 4/8 = 50 %.'],
+      ['Pregunta: ¿qué diferencia hay entre corrección y acción correctiva?','La corrección elimina el problema detectado (calibrar el monitor). La acción correctiva elimina la causa para que no se repita (crear alertas en el software de mantenimiento).'],
+      ['Pregunta: ¿por qué ISO 9001:2015 habla de “pensamiento basado en riesgos” y ya no de acción preventiva?','Porque la prevención se integra desde la planificación: al identificar riesgos y oportunidades en la cláusula 6 se previenen los problemas en lugar de esperar a que aparezcan.']]
+  });
+  const vals=DEF.map(r=>r.slice());
+  const w=$('#work',root);
+  w.innerHTML=Q.map((q,qi)=>`<div class="isoq"><h4>${q[0]}. ${q[1]}</h4>${q[2].map((it,ii)=>`<div class="ci"><span>${it}</span><div class="seg" role="radiogroup" aria-label="${esc(it)}">${[0,1,2].map(s=>`<button type="button" role="radio" data-q="${qi}" data-i="${ii}" data-s="${s}" aria-checked="${vals[qi][ii]===s}">${s}</button>`).join('')}</div></div>`).join('')}</div>`).join('');
+  w.querySelectorAll('button').forEach(b=>b.onclick=()=>{ vals[+b.dataset.q][+b.dataset.i]=+b.dataset.s; b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-checked',String(x===b))); upd(); });
+  $('#ctl',root).innerHTML='<p class="note" style="margin:0">Califica cada requisito a la derecha: 0 no cumple, 1 parcial, 2 cumple. Los resultados se actualizan al instante.</p><div class="btns" style="margin-top:10px"><button type="button" class="btn" id="g13-all">Todo en 2</button><button type="button" class="btn" id="g13-def">Ejemplo</button></div>';
+  $('#g13-all',root).onclick=()=>{ vals.forEach(r=>r.fill(2)); w.querySelectorAll('button').forEach(b=>b.setAttribute('aria-checked',String(+b.dataset.s===2))); upd(); };
+  $('#g13-def',root).onclick=()=>{ DEF.forEach((r,i)=>r.forEach((x,j)=>vals[i][j]=x)); w.querySelectorAll('button').forEach(b=>b.setAttribute('aria-checked',String(vals[+b.dataset.q][+b.dataset.i]===+b.dataset.s))); upd(); };
+  function upd(){
+    const pc=vals.map(r=>r.reduce((a,b)=>a+b,0)/(2*r.length)*100), tot=vals.flat().reduce((a,b)=>a+b,0)/(2*vals.flat().length)*100;
+    const grp=(idx)=>{ const a=idx.flatMap(i=>vals[i]); return a.reduce((x,y)=>x+y,0)/(2*a.length)*100; };
+    const ph=[grp([0,1,2,3]),grp([4]),grp([5]),grp([6])];
+    const col=x=>x>=80?'s3':x>=50?'s4':'s2';
+    P(root,'p1',{series:pc.map((p,i)=>({x:[i+1],y:[p],bars:true,color:col(p)})),xcats:Q.map(q=>'Cl. '+q[0]),xlim:[0.4,7.6],ylim:[0,105],hlines:[{y:80,color:'s3',label:'80 %'}],ylabel:'%'});
+    $('#kpis',root).innerHTML=kpi('Cumplimiento global',fmt(tot,1)+' % '+(tot>=80?pill('ok','listo para preauditoría'):tot>=50?pill('warn','en implementación'):pill('bad','inicial')))+kpi('Planear (4–7)',fmt(ph[0],0)+' %')+kpi('Hacer (8)',fmt(ph[1],0)+' %')+kpi('Verificar (9) / Actuar (10)',fmt(ph[2],0)+' % / '+fmt(ph[3],0)+' %');
+    const weak=pc.map((p,i)=>[p,i]).sort((a,b)=>a[0]-b[0]).slice(0,2);
+    $('#calc',root).innerHTML=`<div class="steps">${Q.map((q,i)=>step(`Cláusula ${q[0]}: ${q[1]}`,`${fr(vals[i].join(' + '),'2·'+vals[i].length)}·100 = ${B(fmt(pc[i],1)+' %')}`)).join('')}${step('Global',`${fr(String(vals.flat().reduce((a,b)=>a+b,0)),'2·'+vals.flat().length)}·100 = ${B(fmt(tot,1)+' %')}`)}</div><p class="note">Prioridad: cláusula ${Q[weak[0][1]][0]} (${Q[weak[0][1]][1]}) y cláusula ${Q[weak[1][1]][0]} (${Q[weak[1][1]][1]}).</p>`;
+  }
+  upd();
+}};
+
+/* ---------- 2.1 ---------- */
+MODS.m21={unit:2,code:'2.1',title:'Planeación estratégica',nav:'Planeación estratégica',
+init(root){
+  const I0=[{f:'Personal técnico certificado y con experiencia',t:'Fortaleza',w:0.15,c:4},{f:'Software de gestión de mantenimiento implementado',t:'Fortaleza',w:0.12,c:3},{f:'Buena relación con los servicios clínicos',t:'Fortaleza',w:0.10,c:3},{f:'Inventario de equipos con hojas de vida completas',t:'Fortaleza',w:0.08,c:3},{f:'Equipos de metrología propios insuficientes',t:'Debilidad',w:0.15,c:1},{f:'Alta rotación de técnicos',t:'Debilidad',w:0.15,c:2},{f:'Presupuesto de repuestos limitado',t:'Debilidad',w:0.15,c:1},{f:'Indicadores no se analizan cada mes',t:'Debilidad',w:0.10,c:2}];
+  const X0=[{f:'Normatividad que exige programas de tecnovigilancia',t:'Oportunidad',w:0.15,c:3},{f:'Convenios con universidades para practicantes',t:'Oportunidad',w:0.10,c:3},{f:'Proveedores que ofrecen capacitación gratuita',t:'Oportunidad',w:0.10,c:2},{f:'Ampliación de la UCI del hospital',t:'Oportunidad',w:0.15,c:3},{f:'Equipos con obsolescencia tecnológica',t:'Amenaza',w:0.15,c:2},{f:'Demora en importación de repuestos',t:'Amenaza',w:0.15,c:2},{f:'Tercerización del servicio por la gerencia',t:'Amenaza',w:0.10,c:1},{f:'Alza en la tasa de cambio',t:'Amenaza',w:0.10,c:2}];
+  root.innerHTML=layout({unit:2,code:'2.1',title:this.title,
+    lead:'La planeación estratégica responde tres preguntas: dónde estamos, a dónde queremos llegar y cómo. Se construye con misión, visión, análisis del entorno (DOFA, MEFI, MEFE), objetivos, estrategias e indicadores.',
+    caso:'El jefe de ingeniería biomédica de un hospital debe presentar a la gerencia el plan estratégico del departamento para los próximos tres años. Empieza evaluando los factores internos (MEFI) y externos (MEFE) con pesos y calificaciones, y ubica al departamento en la matriz interna-externa (IE) para decidir la estrategia general. Todas las filas se pueden editar.',
+    theory:`<ul><li><b>Misión:</b> razón de ser actual. <b>Visión:</b> a dónde se quiere llegar en un plazo definido.</li>
+    <li><b>DOFA:</b> debilidades y fortalezas (internas), oportunidades y amenazas (externas). Al cruzarlas salen estrategias FO (usar fortalezas para aprovechar oportunidades), DO, FA y DA.</li>
+    <li><b>MEFI y MEFE:</b> cuantifican la DOFA. Un total mayor que 2,5 indica una posición interna fuerte o una buena respuesta al entorno.</li>
+    <li><b>Objetivos SMART:</b> específicos, medibles, alcanzables, relevantes y con tiempo definido. Ejemplo: “Aumentar el cumplimiento del plan de mantenimiento preventivo del 85 % al 95 % antes de diciembre de 2027”.</li>
+    <li>En ISO 9001 la planeación se conecta con la política de calidad, los objetivos (cláusula 6.2) y los riesgos (6.1).</li></ul>`,
+    formulas: eq('Puntaje = Σ w<sub>i</sub>·c<sub>i</sub>')+eq('Σ w<sub>i</sub> = 1')+eq('c<sub>i</sub> ∈ {1, 2, 3, 4}','1 debilidad mayor … 4 fortaleza mayor')+eq('Puntaje > 2,5 ⇒ posición favorable'),
+    work:true, labTitle:'Matrices MEFI y MEFE',
+    plots:[{id:'p1',cap:'Matriz interna-externa (IE)',cls:'tall'}],
+    practiceTitle:'Casos y ejercicios',
+    practice:[
+      ['Caso para resolver: con la DOFA del ejemplo, redacta una estrategia FO y una DA.','FO: usar al personal certificado (F) para formar a practicantes de las universidades (O) y crear un semillero de técnicos. DA: negociar con proveedores contratos de repuestos con precio fijado en pesos (para la demora y el alza del dólar) y priorizar la renovación de los equipos obsoletos más críticos.'],
+      ['Ejercicio: una MEFI tiene factores con pesos 0,3; 0,2; 0,25; 0,25 y calificaciones 4, 3, 1, 2. ¿Cuál es el puntaje?','0,3·4 + 0,2·3 + 0,25·1 + 0,25·2 = 1,2 + 0,6 + 0,25 + 0,5 = 2,55. Ligeramente fuerte.'],
+      ['Ejercicio: convierte en SMART el objetivo “mejorar el mantenimiento”.','“Reducir el tiempo promedio de reparación de equipos críticos de UCI de 48 h a 24 h al cierre del segundo semestre de 2027, medido mensualmente en el software de mantenimiento.”'],
+      ['Pregunta: ¿por qué los pesos de la MEFE no dependen de la organización y las calificaciones sí?','El peso mide la importancia del factor en el sector (igual para todos). La calificación mide qué tan bien responde esta organización a ese factor.']]
+  });
+  const w=$('#work',root);
+  w.innerHTML='<h4 style="margin-top:0">MEFI: factores internos</h4><div id="ti"></div><h4>MEFE: factores externos</h4><div id="te"></div>';
+  const cols=(o)=>[{key:'f',label:'Factor',w:260},{key:'t',label:'Tipo',type:'select',options:o},{key:'w',label:'Peso',type:'num',step:0.01,w:70},{key:'c',label:'Calificación (1–4)',type:'num',step:1,w:70}];
+  const I=I0.map(x=>({...x})), X=X0.map(x=>({...x}));
+  editTable($('#ti',root),'g21i',cols(['Fortaleza','Debilidad']),I,upd,{blank:()=>({f:'Nuevo factor',t:'Fortaleza',w:0,c:3})});
+  editTable($('#te',root),'g21e',cols(['Oportunidad','Amenaza']),X,upd,{blank:()=>({f:'Nuevo factor',t:'Oportunidad',w:0,c:2})});
+  $('#ctl',root).innerHTML='<p class="note" style="margin:0">Edita factores, pesos y calificaciones en las tablas. Los pesos de cada matriz deben sumar 1.</p>';
+  function upd(){
+    const sw=a=>a.reduce((s,r)=>s+r.w,0), sc=a=>a.reduce((s,r)=>s+r.w*r.c,0);
+    const si=sc(I), se=sc(X), wi=sw(I), we=sw(X);
+    const lvl=x=>x>=3?2:x>=2?1:0, li=lvl(si), le=lvl(se), sum=li+le;
+    const strat=sum>=3?['Crecer y construir','ok']:sum===2?['Retener y mantener','warn']:['Cosechar o desinvertir','bad'];
+    const under=(g,Xf,Yf)=>{ const cc=[[CSS('band')],[CSS('shade')]]; for(let i=0;i<3;i++) for(let j=0;j<3;j++){ const s=i+j; g.fillStyle=s>=3?CSS('band'):s===2?'rgba(176,116,8,.10)':CSS('shade'); g.fillRect(Xf(1+i),Yf(2+j),Xf(2+i)-Xf(1+i),Yf(1+j)-Yf(2+j)); } };
+    P(root,'p1',{series:[],under,points:[{x:si,y:se,color:'s1',size:7,text:'('+fmt(si,2)+'; '+fmt(se,2)+')'}],xlim:[1,4],ylim:[1,4],vlines:[{x:2,color:'s6',dash:[2,3]},{x:3,color:'s6',dash:[2,3]}],hlines:[{y:2,color:'s6',dash:[2,3]},{y:3,color:'s6',dash:[2,3]}],xlabel:'puntaje MEFI',ylabel:'puntaje MEFE'});
+    $('#kpis',root).innerHTML=kpi('MEFI',fmt(si,2)+' '+(si>=2.5?pill('ok','interno fuerte'):pill('warn','interno débil')))+kpi('MEFE',fmt(se,2)+' '+(se>=2.5?pill('ok','buena respuesta'):pill('warn','respuesta débil')))+kpi('Suma de pesos',fmt(wi,2)+' / '+fmt(we,2)+' '+(Math.abs(wi-1)>0.005||Math.abs(we-1)>0.005?pill('bad','deben sumar 1'):pill('ok','correcto')))+kpi('Estrategia IE',pill(strat[1],strat[0]));
+    const line=(a)=>a.map(r=>`${fmt(r.w,2)}·${fmt(r.c,0)}`).join(' + ');
+    $('#calc',root).innerHTML=`<div class="steps">
+      ${step('1. Puntaje MEFI',`${line(I)} = ${B(fmt(si,3))}`)}
+      ${step('2. Puntaje MEFE',`${line(X)} = ${B(fmt(se,3))}`)}
+      ${step('3. Fortalezas frente a debilidades',`aporte F = ${B(fmt(sc(I.filter(r=>r.t==='Fortaleza')),2))} &nbsp; aporte D = ${B(fmt(sc(I.filter(r=>r.t==='Debilidad')),2))}`)}
+      ${step('4. Oportunidades frente a amenazas',`aporte O = ${B(fmt(sc(X.filter(r=>r.t==='Oportunidad')),2))} &nbsp; aporte A = ${B(fmt(sc(X.filter(r=>r.t==='Amenaza')),2))}`)}
+      ${step('5. Ubicación en la matriz IE',`MEFI ${si>=3?'alto':si>=2?'medio':'bajo'}, MEFE ${se>=3?'alto':se>=2?'medio':'bajo'} → ${B(strat[0])}`)}
+    </div><p class="note">Crecer y construir: penetración de mercado, desarrollo de servicios, integración. Retener y mantener: mejorar procesos y defender lo logrado. Cosechar: reducir costos, tercerizar o retirarse.</p>`;
+  }
+  upd();
+}};
+
+/* ---------- 2.2 ---------- */
+MODS.m22={unit:2,code:'2.2',title:'Estructura organizacional',nav:'Estructura organizacional',
+init(root){
+  root.innerHTML=layout({unit:2,code:'2.2',title:this.title,
+    lead:'La estructura organizacional reparte funciones, autoridad y comunicación. En un hospital define quién decide, quién responde y cómo se coordinan las áreas asistenciales con las de apoyo.',
+    caso:'Se va a crear el departamento de ingeniería biomédica de una clínica con su inventario de equipos clasificado por riesgo (Decreto 4725 de 2005: clases I, IIa, IIb y III). Hay que calcular cuántos técnicos se necesitan según la carga de mantenimiento y cuántos coordinadores según el tramo de control, y dibujar el organigrama resultante.',
+    theory:`<ul><li><b>Estructura funcional:</b> por especialidades (dirección médica, administrativa, de apoyo). Es la más común en hospitales.</li>
+    <li><b>Por procesos:</b> se organiza alrededor del recorrido del paciente; reduce los “silos” entre departamentos.</li>
+    <li><b>Matricial:</b> combina funciones y proyectos; útil para acreditación o implementación de software.</li></ul>
+    <p><b>Tramo de control:</b> número de personas que un jefe puede dirigir bien. En trabajo técnico de campo suele estar entre 5 y 8. Un tramo muy amplio deja al personal sin apoyo; uno muy corto crea niveles jerárquicos innecesarios.</p>
+    <p><b>Matriz RACI:</b> para cada actividad define quién la Realiza, quién Aprueba, a quién se Consulta y a quién se Informa.</p>
+    <div class="tbl"><table><tr><th>Clase</th><th>Riesgo</th><th>Ejemplos</th><th>Preventivo típico</th></tr><tr><td>I</td><td>bajo</td><td>camillas, tensiómetros manuales</td><td>1 visita/año · 2 h</td></tr><tr><td>IIa</td><td>moderado</td><td>monitores, electrocardiógrafos</td><td>2 visitas/año · 4 h</td></tr><tr><td>IIb</td><td>alto</td><td>bombas de infusión, electrobisturí</td><td>2 visitas/año · 6 h</td></tr><tr><td>III</td><td>muy alto</td><td>ventiladores, desfibriladores, máquinas de anestesia</td><td>3–4 visitas/año · 12 h</td></tr></table></div>`,
+    formulas: eq('H<sub>prev</sub> = Σ N<sub>c</sub>·h<sub>c</sub>')+eq('H<sub>tot</sub> = H<sub>prev</sub>·(1 + f<sub>c</sub>)')+eq('H<sub>prod</sub> = 48·44·productividad')+eq('Técnicos = ⌈H<sub>tot</sub>/H<sub>prod</sub>⌉ · Coordinadores = ⌈Técnicos/s⌉'),
+    work:true,
+    plots:[{id:'p1',cap:'Horas anuales de mantenimiento por clase de riesgo'}],
+    practiceTitle:'Casos y ejercicios',
+    practice:[
+      ['Caso para resolver: arma la matriz RACI para “mantenimiento correctivo de un ventilador de UCI”.','Reportar la falla: R enfermería, I biomédica. Diagnosticar y reparar: R técnico, A coordinador biomédico. Pedir repuesto: R coordinador, A jefe de compras. Liberar el equipo: R técnico, A coordinador, C jefe de UCI. Registrar en hoja de vida: R técnico, I calidad.'],
+      ['Ejercicio: 200 equipos IIa (4 h) y 50 clase III (12 h), correctivo 40 %, productividad 75 %. ¿Cuántos técnicos?','H<sub>prev</sub> = 800 + 600 = 1400 h. H<sub>tot</sub> = 1960 h. H<sub>prod</sub> = 48·44·0,75 = 1584 h. Técnicos = ⌈1,24⌉ = 2.'],
+      ['Ejercicio: con 14 técnicos y un tramo de control de 6, ¿cuántos coordinadores y niveles hay?','⌈14/6⌉ = 3 coordinadores. Niveles: jefe, coordinadores y técnicos = 3 niveles.'],
+      ['Pregunta: ¿qué ventaja tiene una estructura por procesos frente a una funcional en urgencias?','El responsable del proceso ve todo el recorrido del paciente (admisión, triage, consulta, laboratorio, hospitalización) y puede eliminar esperas entre áreas que en la funcional nadie gestiona.']]
+  });
+  const ctl=makeControls($('#ctl',root),'g22',[
+    {id:'n1',label:'Equipos clase I',min:0,max:800,step:10,value:300,dec:0},
+    {id:'n2',label:'Equipos clase IIa',min:0,max:800,step:10,value:250,dec:0},
+    {id:'n3',label:'Equipos clase IIb',min:0,max:500,step:5,value:150,dec:0},
+    {id:'n4',label:'Equipos clase III',min:0,max:200,step:2,value:40,dec:0},
+    {id:'fc',label:'Correctivo como % del preventivo',min:0,max:100,step:5,value:40,unit:'%',dec:0},
+    {id:'pr',label:'Productividad del técnico',min:50,max:95,step:1,value:75,unit:'%',dec:0},
+    {id:'s',label:'Tramo de control',min:3,max:12,step:1,value:6,unit:'personas',dec:0}],upd);
+  function upd(v){
+    const h=[2,4,6,12], n=[v.n1,v.n2,v.n3,v.n4], hc=n.map((x,i)=>x*h[i]), Hp=hc.reduce((a,b)=>a+b,0), Ht=Hp*(1+v.fc/100), Hd=48*44*v.pr/100;
+    const tec=Math.max(1,Math.ceil(Ht/Hd)), co=tec>v.s?Math.ceil(tec/v.s):0, lev=co?3:2;
+    P(root,'p1',{series:hc.map((x,i)=>({x:[i+1],y:[x],bars:true,color:['s6','s1','s4','s2'][i]})),xcats:['Clase I','IIa','IIb','III'],xlim:[0.4,4.6],ylabel:'horas/año',yzero:true});
+    const W=760, boxes=[]; const box=(x,y,w,t1,t2,c)=>`<g><rect x="${x}" y="${y}" width="${w}" height="46" rx="6" fill="var(--surface)" stroke="${c}"/><text x="${x+w/2}" y="${y+20}" text-anchor="middle" fill="var(--ink)" font-size="12.5" font-weight="600">${t1}</text><text x="${x+w/2}" y="${y+36}" text-anchor="middle" fill="var(--muted)" font-size="11.5">${t2}</text></g>`;
+    let svg=box(W/2-110,8,220,'Jefe de Ingeniería Biomédica','ingeniero biomédico','var(--accent)');
+    if(co){ const k=Math.min(co,6), bw=Math.min(150,(W-20)/k-10); for(let i=0;i<k;i++){ const x=10+i*((W-20)/k)+((W-20)/k-bw)/2; const tk=i<co-1||co<=6?Math.min(v.s,tec-i*v.s):tec-(k-1)*v.s; svg+=`<line x1="${W/2}" y1="54" x2="${x+bw/2}" y2="96" stroke="var(--line)"/>`+box(x,96,bw,'Coordinador '+(i+1),'','var(--line)')+`<line x1="${x+bw/2}" y1="142" x2="${x+bw/2}" y2="170" stroke="var(--line)"/>`+box(x,170,bw,Math.max(0,tk)+' técnicos','mantenimiento','var(--line)'); } if(co>6) svg+=`<text x="${W-10}" y="230" text-anchor="end" fill="var(--muted)" font-size="12">${co} coordinadores en total</text>`; }
+    else svg+=`<line x1="${W/2}" y1="54" x2="${W/2}" y2="96" stroke="var(--line)"/>`+box(W/2-90,96,180,tec+' técnicos','reportan al jefe','var(--line)');
+    $('#work',root).innerHTML=`<h4 style="margin-top:0">Organigrama propuesto</h4><div class="diagram"><svg viewBox="0 0 ${W} 240" style="min-width:560px" role="img" aria-label="Organigrama del departamento">${svg}</svg></div>`;
+    $('#kpis',root).innerHTML=kpi('Horas preventivo',fmt(Hp,0)+' h/año')+kpi('Carga total',fmt(Ht,0)+' h/año')+kpi('Técnicos necesarios',String(tec))+kpi('Coordinadores / niveles',co+' / '+lev);
+    $('#calc',root).innerHTML=`<div class="steps">
+      ${step('1. Horas de preventivo',`${n.map((x,i)=>fmt(x,0)+'·'+h[i]).join(' + ')} = ${B(fmt(Hp,0)+' h')}`)}
+      ${step('2. Carga con correctivo',`${fmt(Hp,0)}·(1 + ${fmt(v.fc/100,2)}) = ${B(fmt(Ht,0)+' h')}`)}
+      ${step('3. Horas productivas por técnico',`48·44·${fmt(v.pr/100,2)} = ${B(fmt(Hd,0)+' h')}`)}
+      ${step('4. Técnicos',`⌈${fr(fmt(Ht,0),fmt(Hd,0))}⌉ = ⌈${fmt(Ht/Hd,2)}⌉ = ${B(String(tec))}`)}
+      ${step('5. Coordinadores',co?`⌈${fr(String(tec),String(v.s))}⌉ = ${B(String(co))}`:`${tec} ≤ ${v.s}: ${B('el jefe coordina directamente')}`)}
+      ${step('6. Utilización real del equipo',`${fr(fmt(Ht,0),tec+'·'+fmt(Hd,0))} = ${B(fmt(Ht/(tec*Hd)*100,1)+' %')}`)}
+    </div>`;
+  }
+  ctl.fire();
+}};
+
+/* ---------- 2.3 ---------- */
+MODS.m23={unit:2,code:'2.3',title:'Procesos y metodologías para mejorar la calidad',nav:'Procesos y metodologías de mejora',
+init(root){
+  root.innerHTML=layout({unit:2,code:'2.3',title:this.title,
+    lead:'Gestionar por procesos es mirar el recorrido completo del paciente y no solo cada departamento. Para mejorar se usan PHVA, Lean y Six Sigma, y para decidir con números se usan modelos como la teoría de colas.',
+    caso:'Urgencias recibe en promedio λ pacientes por hora y cada consulta médica dura en promedio t<sub>s</sub> minutos. La meta interna es que el 90 % de los pacientes clasificados como triage II sea atendido en menos de 30 minutos. ¿Cuántos médicos se necesitan por turno? Se usa el modelo de colas M/M/c (Erlang C).',
+    theory:`<div class="tbl"><table><tr><th>Metodología</th><th>Idea central</th><th>Ciclo</th><th>Ejemplo en salud</th></tr>
+    <tr><td>PHVA (Deming)</td><td>Mejorar en ciclos cortos y repetidos</td><td>Planear, Hacer, Verificar, Actuar</td><td>Reducir errores en la entrega de medicamentos</td></tr>
+    <tr><td>Lean</td><td>Eliminar desperdicios: lo que no agrega valor al paciente</td><td>Valor, flujo, jalar, perfección</td><td>Eliminar esperas y registros duplicados en admisión</td></tr>
+    <tr><td>Six Sigma</td><td>Reducir la variación con datos</td><td>DMAIC</td><td>Disminuir infecciones de catéter</td></tr>
+    <tr><td>Kaizen</td><td>Pequeñas mejoras diarias con todo el equipo</td><td>PHVA + 5S</td><td>Ordenar el carro de paro</td></tr></table></div>
+    <p><b>Gestión por procesos vs. departamental:</b> en el enfoque departamental cada área optimiza lo suyo; en el de procesos se optimiza el recorrido completo. Un proceso tiene entradas, actividades, salidas, responsable (dueño), indicadores y clientes.</p>
+    <p><b>Colas:</b> cuando la utilización de los médicos se acerca a 100 % la espera crece de forma explosiva. Por eso un servicio de urgencias nunca debe planearse al 100 % de ocupación.</p>`,
+    formulas: eq('μ = 60/t<sub>s</sub> · A = λ/μ · ρ = A/c')+eq('W<sub>q</sub> = C(c, A)/(cμ − λ)','Erlang C')+eq('L<sub>q</sub> = λ·W<sub>q</sub>','Little')+eq('P(W > t) = C·e<sup>−(cμ − λ)t</sup>'),
+    plots:[{id:'p1',cap:'Espera promedio según el número de médicos'},{id:'p2',cap:'Porcentaje de pacientes que espera más de t',cls:'short'}],
+    practiceTitle:'Casos y ejercicios',
+    practice:[
+      ['Caso para resolver: aplica PHVA a “pacientes que salen de urgencias sin ser atendidos”.','P: medir el indicador actual y analizar causas (espera larga en triage). H: probar un médico de triage en horas pico durante un mes. V: comparar el porcentaje de fugas antes y después. A: si bajó, estandarizar el horario; si no, revisar otra causa y repetir.'],
+      ['Ejercicio: llegan 12 pacientes/h, cada consulta dura 20 min y hay 5 médicos. ¿Cuál es la utilización?','μ = 3 pac/h por médico. A = 12/3 = 4 erlangs. ρ = 4/5 = 80 %.'],
+      ['Ejercicio: si en promedio hay 6 pacientes en la sala de espera y llegan 12 por hora, ¿cuánto espera cada uno (Little)?','W = L/λ = 6/12 = 0,5 h = 30 min.'],
+      ['Pregunta: ¿por qué con 4 médicos el sistema anterior no funciona?','Porque A = 4 = c: la utilización sería 100 % y la cola crece sin límite. Se necesita c > A.']]
+  });
+  const ctl=makeControls($('#ctl',root),'g23',[
+    {id:'lam',label:'Llegadas de pacientes λ',min:2,max:30,step:0.5,value:12,unit:'pac/h',dec:1},
+    {id:'ts',label:'Duración promedio de la consulta',min:5,max:60,step:1,value:20,unit:'min',dec:0},
+    {id:'c',label:'Médicos en el turno c',min:1,max:20,step:1,value:5,dec:0},
+    {id:'T',label:'Tiempo meta de espera',min:5,max:120,step:5,value:30,unit:'min',dec:0}],upd);
+  function erlC(c,A){ let s=0,t=1; for(let k=0;k<c;k++){ if(k>0) t*=A/k; s+=t; } const last=t*A/c, top=last*c/(c-A); return top/(s+top); }
+  function upd(v){
+    const mu=60/v.ts, A=v.lam/mu, cmin=Math.floor(A)+1;
+    const calc=c=>{ if(c<=A) return null; const C=erlC(c,A), Wq=C/(c*mu-v.lam); return {C,Wq,Lq:v.lam*Wq,Pt:C*Math.exp(-(c*mu-v.lam)*v.T/60),rho:A/c}; };
+    const xs=[],ys=[]; for(let c=cmin;c<=cmin+8;c++){ const r=calc(c); xs.push(c); ys.push(r.Wq*60); }
+    let need=null; for(let c=cmin;c<cmin+40;c++){ if(calc(c).Pt<=0.10){ need=c; break; } }
+    const r=calc(v.c);
+    P(root,'p1',{series:[{x:xs,y:ys,color:'s1',label:'espera en cola (min)'}],points:[...xs.map((x,i)=>({x,y:ys[i],shape:'dot',color:x===v.c?'s2':'s1',size:x===v.c?6:4}))],hlines:[{y:v.T,color:'s4',label:'meta '+v.T+' min'}],xlabel:'número de médicos',ylabel:'minutos',yzero:true});
+    if(r){ const t=[],p=[]; for(let i=0;i<=200;i++){ const tm=120*i/200; t.push(tm); p.push(r.C*Math.exp(-(v.c*mu-v.lam)*tm/60)*100); }
+      P(root,'p2',{series:[{x:t,y:p,color:'s2',label:'P(espera > t)'}],vlines:[{x:v.T,color:'s4',label:'meta'}],hlines:[{y:10,color:'s3',label:'10 %'}],xlabel:'t (min)',ylabel:'%',yzero:true}); }
+    else P(root,'p2',{series:[],xlabel:'t (min)'});
+    $('#kpis',root).innerHTML=r?kpi('Utilización ρ',fmt(r.rho*100,1)+' %')+kpi('Espera promedio',fmt(r.Wq*60,1)+' min')+kpi('Pacientes en cola',fmt(r.Lq,2))+kpi('Esperan más de '+v.T+' min',fmt(r.Pt*100,1)+' % '+(r.Pt<=0.1?pill('ok','cumple'):pill('bad','no cumple'))):kpi('Estado',pill('bad','la cola crece sin límite'))+kpi('Médicos mínimos',String(cmin));
+    $('#calc',root).innerHTML=`<div class="steps">
+      ${step('1. Tasa de servicio por médico',`μ = ${fr('60',fmt(v.ts,0))} = ${B(fmt(mu,3)+' pac/h')}`)}
+      ${step('2. Carga ofrecida',`A = ${fr(fmt(v.lam,1),fmt(mu,3))} = ${B(fmt(A,3)+' erlangs')} → se necesitan más de ${fmt(A,2)} médicos`)}
+      ${r?step('3. Utilización',`ρ = ${fr(fmt(A,3),String(v.c))} = ${B(fmt(r.rho*100,1)+' %')}`)+step('4. Probabilidad de esperar (Erlang C)',`C(${v.c}; ${fmt(A,2)}) = ${B(fmt(r.C*100,2)+' %')}`)+step('5. Espera promedio',`W<sub>q</sub> = ${fr(fmt(r.C,4),v.c+'·'+fmt(mu,3)+' − '+fmt(v.lam,1))} = ${fmt(r.Wq,4)} h = ${B(fmt(r.Wq*60,1)+' min')}`)+step('6. Pacientes en cola (Little)',`L<sub>q</sub> = ${fmt(v.lam,1)}·${fmt(r.Wq,4)} = ${B(fmt(r.Lq,2))}`)+step('7. Esperan más de la meta',`${fmt(r.C,4)}·e<sup>−(${fmt(v.c*mu-v.lam,2)})(${fmt(v.T/60,3)})</sup> = ${B(fmt(r.Pt*100,2)+' %')}`):step('3. Sistema inestable',`c = ${v.c} ≤ A: ${B('se acumulan pacientes indefinidamente')}`)}
+      ${step('Médicos para que ≤ 10 % espere más de '+v.T+' min',B(String(need)))}
+    </div>`;
+  }
+  ctl.fire();
+}};
+
+/* ---------- 3.1 ---------- */
+MODS.m31={unit:3,code:'3.1',title:'Diagramas de causa y efecto y gráficas de control',nav:'Causa-efecto, Pareto y control',
+init(root){
+  const CATS=['Método','Mano de obra','Maquinaria','Materiales','Medición','Medio ambiente'];
+  const C0=[['Método','No hay priorización por criticidad del equipo'],['Método','Órdenes de trabajo se reciben por teléfono'],['Mano de obra','Técnicos sin capacitación en equipos nuevos'],['Mano de obra','Un solo técnico por turno'],['Maquinaria','Equipos sin manual de servicio'],['Maquinaria','Software de mantenimiento lento'],['Materiales','Repuestos importados con demora'],['Materiales','Sin stock de accesorios (sensores, cables)'],['Medición','No se mide el tiempo de respuesta'],['Medio ambiente','Taller lejos de UCI y quirófanos']];
+  const PA0=[{c:'Accesorios dañados (sensores, cables)',f:58},{c:'Uso inadecuado por el usuario',f:41},{c:'Falla de batería',f:27},{c:'Calibración vencida',f:14},{c:'Falla de software',f:9},{c:'Desgaste mecánico',f:7},{c:'Daño por líquidos',f:5},{c:'Otros',f:4}];
+  root.innerHTML=layout({unit:3,code:'3.1',title:this.title,
+    lead:'Tres herramientas que se usan juntas. El diagrama de Ishikawa organiza las posibles causas de un problema. El diagrama de Pareto prioriza las causas que más pesan. La gráfica de control dice si el proceso es estable o si apareció una causa especial.',
+    caso:'El departamento de biomédica tiene un problema: el mantenimiento correctivo se demora. Primero construye el Ishikawa (6M), después clasifica 165 reportes de falla del semestre con Pareto, y finalmente vigila con una gráfica p el porcentaje diario de historias clínicas con el registro de uso del equipo incompleto.',
+    theory:`<p><b>Ishikawa (espina de pescado).</b> La cabeza es el problema y las espinas son categorías de causas. En salud se usan las 6M: método, mano de obra, maquinaria, materiales, medición y medio ambiente. Se construye en equipo con lluvia de ideas y luego se profundiza cada causa con los 5 porqués.</p>
+    <p><b>Pareto.</b> Se ordenan las causas de mayor a menor frecuencia y se grafica el porcentaje acumulado. Normalmente pocas causas (cerca del 20 %) explican la mayoría de los casos (cerca del 80 %).</p>
+    <p><b>Gráfica de control.</b> Creada por Shewhart. Tiene una línea central y límites a ±3σ. Un punto fuera de los límites, o 7 puntos seguidos del mismo lado de la línea central, indican una causa especial que hay que investigar. La gráfica p se usa para proporciones de defectuosos.</p>`,
+    formulas: eq('%<sub>i</sub> = f<sub>i</sub>/Σf · 100')+eq('%acum<sub>k</sub> = Σ<sub>i≤k</sub> %<sub>i</sub>')+eq('p̄ = Σd/Σn')+eq('LC = p̄ ± 3√(p̄(1 − p̄)/n)'),
+    work:true,
+    plots:[{id:'p1',cap:'Gráfica'}],
+    practiceTitle:'Casos y ejercicios',
+    practice:[
+      ['Caso para resolver: haz los 5 porqués de “la bomba de infusión de UCI estuvo 5 días fuera de servicio”.','¿Por qué? Faltaba un repuesto. ¿Por qué? No había stock. ¿Por qué? No se sabía qué repuestos fallan más. ¿Por qué? Las órdenes de trabajo no registran la pieza cambiada. ¿Por qué? El formato no tiene ese campo. Acción: modificar el formato y armar un stock mínimo con base en un Pareto de repuestos.'],
+      ['Ejercicio: con los datos de Pareto del ejemplo, ¿qué porcentaje explican las dos primeras causas?','(58 + 41)/165 = 60 %. Con la tercera llega a 76,4 % y con la cuarta a 84,8 %: con el criterio del 80 %, las cuatro primeras son los “pocos vitales”.'],
+      ['Ejercicio: p̄ = 0,06 y n = 100. Calcula los límites de la gráfica p.','σ = √(0,06·0,94/100) = 0,0237. LCS = 0,06 + 0,071 = 0,131. LCI = 0,06 − 0,071 < 0 → 0.'],
+      ['Pregunta: ¿qué hacer si un punto cae por debajo del límite inferior en una gráfica de defectos?','También es causa especial, pero favorable. Se investiga qué pasó ese día para repetirlo (o verificar que no fue un error de registro).']]
+  });
+  const ctl=makeControls($('#ctl',root),'g31',[
+    {type:'seg',id:'mode',label:'Herramienta',options:[['ish','Ishikawa'],['par','Pareto'],['ctl','Gráfica p']],value:'ish'},
+    {id:'n',label:'Historias auditadas por día n',min:30,max:300,step:5,value:100,dec:0,showIf:v=>v.mode==='ctl'},
+    {id:'p',label:'Proporción normal de incompletas',min:1,max:20,step:0.5,value:6,unit:'%',dec:1,showIf:v=>v.mode==='ctl'},
+    {id:'d',label:'Días observados',min:15,max:40,step:1,value:30,dec:0,showIf:v=>v.mode==='ctl'},
+    {id:'cd',label:'Día en que cambia el proceso',min:5,max:40,step:1,value:22,dec:0,showIf:v=>v.mode==='ctl'},
+    {id:'sh',label:'Aumento de la proporción tras el cambio',min:0,max:10,step:0.5,value:5,unit:'pts %',dec:1,showIf:v=>v.mode==='ctl'}],upd);
+  const causes=C0.map(x=>({cat:x[0],t:x[1]})), PA=PA0.map(x=>({...x}));
+  let last='', prob='Demora en el mantenimiento correctivo';
+  function fish(){
+    const W=900,H=380,y0=190, xs=[200,420,640];
+    let s=`<line x1="30" y1="${y0}" x2="740" y2="${y0}" stroke="var(--ink)" stroke-width="2.5"/><rect x="740" y="${y0-42}" width="150" height="84" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"/><foreignObject x="746" y="${y0-38}" width="138" height="76"><div xmlns="http://www.w3.org/1999/xhtml" style="font:600 12.5px var(--f-body);color:var(--ink);display:flex;align-items:center;height:100%;text-align:center">${esc(prob)}</div></foreignObject>`;
+    CATS.forEach((c,i)=>{ const top=i<3, xb=xs[i%3], x1=xb-110, y1=top?40:H-40;
+      s+=`<line x1="${x1}" y1="${y1}" x2="${xb+30}" y2="${y0}" stroke="var(--muted)" stroke-width="1.6"/><text x="${x1}" y="${top?y1-10:y1+20}" text-anchor="middle" fill="var(--accent)" font-size="13" font-weight="700">${c}</text>`;
+      const list=causes.filter(k=>k.cat===c); list.forEach((k,j)=>{ const f=(j+1)/(list.length+1)*0.85, px=x1+(xb+30-x1)*f, py=y1+(y0-y1)*f; s+=`<line x1="${px-70}" y1="${py}" x2="${px}" y2="${py}" stroke="var(--line)"/><text x="${px-72}" y="${py-3}" text-anchor="end" fill="var(--ink)" font-size="11">${esc(k.t.length>34?k.t.slice(0,33)+'…':k.t)}</text>`; }); });
+    return `<div class="diagram"><svg viewBox="0 0 ${W} ${H}" style="min-width:760px" role="img" aria-label="Diagrama de Ishikawa">${s}</svg></div>`;
+  }
+  function upd(v){
+    const w=$('#work',root); show(root,'p1',v.mode!=='ish');
+    if(v.mode==='ish'){
+      const render=()=>{ w.innerHTML=`<div class="crow num" style="justify-content:flex-start;flex-wrap:wrap"><label for="g31-prob">Problema</label><input type="text" id="g31-prob" value="${esc(prob)}" style="width:min(100%,360px)"></div>${fish()}<div class="addc"><input type="text" id="g31-new" placeholder="Escribe una causa" aria-label="Nueva causa"><select id="g31-cat" aria-label="Categoría">${CATS.map(c=>`<option>${c}</option>`).join('')}</select><button type="button" class="btn" id="g31-add">Agregar causa</button></div><div class="chips">${causes.map((k,i)=>`<span class="chip">${esc(k.cat)}: ${esc(k.t)} <button type="button" data-x="${i}" aria-label="Quitar causa">×</button></span>`).join('')}</div>`;
+        $('#g31-prob',root).onchange=e=>{ prob=e.target.value; render(); };
+        $('#g31-add',root).onclick=()=>{ const t=$('#g31-new',root).value.trim(); if(t){ causes.push({cat:$('#g31-cat',root).value,t}); render(); } };
+        w.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{ causes.splice(+b.dataset.x,1); render(); });
+        const cnt=CATS.map(c=>causes.filter(k=>k.cat===c).length);
+        $('#kpis',root).innerHTML=kpi('Causas registradas',String(causes.length))+kpi('Categoría con más causas',CATS[cnt.indexOf(Math.max(...cnt))]);
+        $('#calc',root).innerHTML=`<p class="note">El Ishikawa no calcula nada: ordena la conversación. El siguiente paso es verificar con datos cuáles causas pesan más (Pareto) y profundizar en ellas con los 5 porqués.</p>`; };
+      render(); last='ish'; return;
+    }
+    if(v.mode==='par'){
+      if(last!=='par'){ w.innerHTML='<div id="pt"></div>'; editTable($('#pt',root),'g31p',[{key:'c',label:'Causa',w:260},{key:'f',label:'Frecuencia',type:'num',step:1,w:80}],PA,()=>upd(ctl.v),{blank:()=>({c:'Nueva causa',f:1})}); }
+      last='par';
+      const s=PA.filter(r=>r.f>0).slice().sort((a,b)=>b.f-a.f), tot=s.reduce((a,r)=>a+r.f,0); let acc=0; const pc=s.map(r=>r.f/tot*100), cum=pc.map(x=>acc+=x);
+      const vital=cum.findIndex(x=>x>=80)+1;
+      P(root,'p1',{series:[...s.map((r,i)=>({x:[i+1],y:[pc[i]],bars:true,color:i<vital?'s2':'s6'})),{x:s.map((_,i)=>i+1),y:cum,color:'s1',label:'% acumulado'}],points:cum.map((c,i)=>({x:i+1,y:c,shape:'dot',color:'s1',size:3.5})),xcats:s.map(r=>r.c.length>14?r.c.slice(0,13)+'…':r.c),xlim:[0.4,s.length+0.6],ylim:[0,105],hlines:[{y:80,color:'s4',label:'80 %'}],ylabel:'%',legend:[{color:'s2',label:'pocos vitales (hasta 80 %)'},{color:'s6',label:'muchos triviales'}]});
+      $('#kpis',root).innerHTML=kpi('Total de casos',fmt(tot,0))+kpi('Causas vitales',vital+' de '+s.length)+kpi('Explican',fmt(cum[vital-1],1)+' %')+kpi('Causa principal',esc(s[0]?.c||'—'));
+      $('#calc',root).innerHTML=`<div class="tbl"><table><tr><th>Causa</th><th>f</th><th>%</th><th>% acumulado</th></tr>${s.map((r,i)=>`<tr><td>${esc(r.c)}</td><td class="mono">${r.f}</td><td class="mono">${fmt(r.f,0)}/${fmt(tot,0)} = ${fmt(pc[i],1)} %</td><td class="mono">${fmt(cum[i],1)} %</td></tr>`).join('')}</table></div>`;
+      return;
+    }
+    last='ctl'; w.innerHTML='';
+    const g=gaussGen(21), n=v.n, days=v.d, p0=v.p/100, p1=p0+v.sh/100; const t=[],ps=[];
+    for(let i=1;i<=days;i++){ const pt=i>=v.cd?p1:p0; const d=Math.max(0,Math.round(n*pt+Math.sqrt(n*pt*(1-pt))*g())); t.push(i); ps.push(d/n); }
+    const base=Math.max(5,Math.min(v.cd-1,days)), pb=ps.slice(0,base).reduce((a,b)=>a+b,0)/base, sg=Math.sqrt(pb*(1-pb)/n), U=pb+3*sg, L=Math.max(0,pb-3*sg);
+    const out=ps.map((x,i)=>x>U||x<L); let run=0, runFlag=ps.map(()=>false); for(let i=0;i<days;i++){ run=ps[i]>pb?run+1:0; if(run>=7) for(let k=i-6;k<=i;k++) runFlag[k]=true; }
+    P(root,'p1',{series:[{x:t,y:ps.map(x=>x*100),color:'s1',width:1.4,label:'proporción diaria'}],points:t.map((x,i)=>({x,y:ps[i]*100,shape:'dot',size:out[i]||runFlag[i]?5.5:3.5,color:out[i]?'s2':runFlag[i]?'s4':'s1'})),hlines:[{y:pb*100,color:'s3',label:'p̄'},{y:U*100,color:'s2',label:'LCS'},{y:L*100,color:'s2',label:'LCI'}],vlines:v.sh>0&&v.cd<=days?[{x:v.cd-0.5,color:'s6',label:'cambio'}]:[],xlabel:'día',ylabel:'% incompletas',yzero:true,legend:[{color:'s2',label:'fuera de límites'},{color:'s4',label:'racha de 7 sobre p̄'}]});
+    const nout=out.filter(Boolean).length, first=out.findIndex(Boolean);
+    $('#kpis',root).innerHTML=kpi('p̄ (línea central)',fmt(pb*100,2)+' %')+kpi('LCS / LCI',fmt(U*100,2)+' % / '+fmt(L*100,2)+' %')+kpi('Puntos fuera',String(nout))+kpi('Estado',nout||runFlag.some(Boolean)?pill('bad','fuera de control'):pill('ok','bajo control'));
+    $('#calc',root).innerHTML=`<div class="steps">
+      ${step('1. Línea central (con los primeros '+base+' días)',`p̄ = ${B(fmt(pb,4))}`)}
+      ${step('2. Desviación estándar',`σ<sub>p</sub> = √(${fmt(pb,4)}·${fmt(1-pb,4)}/${n}) = ${B(fmt(sg,4))}`)}
+      ${step('3. Límite superior',`${fmt(pb,4)} + 3·${fmt(sg,4)} = ${B(fmt(U,4))}`)}
+      ${step('4. Límite inferior',`${fmt(pb,4)} − 3·${fmt(sg,4)} = ${fmt(pb-3*sg,4)} → ${B(fmt(L,4))}`)}
+      ${step('5. Primera señal',first>=0?`día ${B(String(first+1))}`:'ninguna')}
+    </div><p class="note">Los límites se calculan con el periodo estable (fase I) y luego se usan para vigilar. Si se recalculan incluyendo los días con la causa especial, los límites se ensanchan y la ocultan.</p>`;
+  }
+  ctl.fire();
+}};
+
+/* ---------- 3.2 ---------- */
+MODS.m32={unit:3,code:'3.2',title:'Kaizen',nav:'Kaizen',
+init(root){
+  const R0=[{a:'Esperar turno',t:'Desperdicio',b:15,d:10},{a:'Entregar documentos',t:'NVA necesaria',b:5,d:2},{a:'Registrar información',t:'Valor agregado',b:10,d:8},{a:'Esperar nuevamente',t:'Desperdicio',b:10,d:0},{a:'Confirmación de datos',t:'NVA necesaria',b:5,d:5}];
+  const S=['Seiri: clasificar','Seiton: ordenar','Seiso: limpiar','Seiketsu: estandarizar','Shitsuke: disciplina'];
+  root.innerHTML=layout({unit:3,code:'3.2',title:this.title,
+    lead:'Kaizen significa “cambio para mejor”. No busca grandes inversiones sino pequeñas mejoras continuas hechas por las personas que trabajan en el proceso. Cambia la pregunta “¿quién se equivocó?” por “¿qué podemos mejorar del proceso?”.',
+    caso:'Proceso de admisión de consulta externa (ejemplo de clase). Hoy toma 45 minutos. El equipo identifica cada actividad, la clasifica como valor agregado, no valor necesaria o desperdicio, y propone tiempos después de simplificar formularios y compartir información. Además audita con 5S la sala de procedimientos.',
+    theory:`<p><b>Principios:</b> mejora continua, participación del equipo, eliminar desperdicios, estandarizar y medir.</p>
+    <p><b>Desperdicios en salud:</b> esperas, duplicación de registros, movimientos innecesarios, inventario excesivo o vencido, errores y reprocesos, y talento no aprovechado.</p>
+    <p><b>Clasificación de actividades:</b></p>
+    <ul><li><b>Valor agregado (VA):</b> transforma el servicio y el paciente estaría dispuesto a pagarla.</li><li><b>No valor necesaria:</b> no agrega valor pero hoy es obligatoria (normas, facturación); se reduce.</li><li><b>Desperdicio:</b> se elimina.</li></ul>
+    <p><b>Herramientas:</b> PHVA, 5S, Ishikawa, 5 porqués y medición antes y después. Un evento Kaizen típico dura de 3 a 5 días con un equipo multidisciplinario.</p>`,
+    formulas: eq('Reducción = (T<sub>antes</sub> − T<sub>después</sub>)/T<sub>antes</sub> · 100')+eq('%VA = T<sub>VA</sub>/T<sub>total</sub> · 100')+eq('5S% = Σ calificaciones/20 · 100'),
+    work:true,
+    plots:[{id:'p1',cap:'Tiempo por actividad: antes vs. después'}],
+    practiceTitle:'Casos y ejercicios',
+    practice:[
+      ['Caso para resolver (reto Kaizen de clase): elige el proceso de entrega de medicamentos en hospitalización y completa: problema, causa, desperdicio, mejora, indicador y resultado esperado.','Problema: dosis entregadas tarde. Causa: farmacia despacha una sola vez al día. Desperdicio: espera y movimientos de enfermería. Mejora: dispensación por dosis unitaria en dos rondas. Indicador: % de dosis administradas a tiempo. Resultado esperado: pasar de 82 % a 95 %.'],
+      ['Ejercicio: los errores de registro bajaron de 12 a 5 casos. ¿Cuál fue la mejora porcentual?','(12 − 5)/12·100 = 58,3 %.'],
+      ['Ejercicio: una auditoría 5S da 3, 2, 4, 1, 1. ¿Cuál es el puntaje?','(3 + 2 + 4 + 1 + 1)/20·100 = 55 %. Las S más débiles son estandarizar y disciplina: el orden no se sostiene.'],
+      ['Pregunta: ¿por qué “comprar un software” no es por sí solo una mejora Kaizen?','Porque Kaizen mejora el proceso. Si el proceso es malo, el software solo lo automatiza. Primero se rediseña y se eliminan pasos; luego se decide si la tecnología ayuda.']]
+  });
+  const ctl=makeControls($('#ctl',root),'g32',[
+    {type:'seg',id:'mode',label:'Herramienta',options:[['pro','Antes y después'],['5s','Auditoría 5S']],value:'pro'},
+    ...S.map((s,i)=>({id:'s'+i,label:s,min:0,max:4,step:1,value:[3,2,3,1,1][i],dec:0,showIf:v=>v.mode==='5s'}))],upd);
+  const rows=R0.map(x=>({...x})); let last='';
+  function upd(v){
+    const w=$('#work',root);
+    if(v.mode==='5s'){ last='5s'; w.innerHTML='';
+      const sc=S.map((_,i)=>v['s'+i]), tot=sc.reduce((a,b)=>a+b,0)/20*100, low=sc.indexOf(Math.min(...sc));
+      P(root,'p1',{series:sc.map((x,i)=>({x:[i+1],y:[x],bars:true,color:x>=3?'s3':x>=2?'s4':'s2'})),xcats:['Clasificar','Ordenar','Limpiar','Estandarizar','Disciplina'],xlim:[0.4,5.6],ylim:[0,4.2],ylabel:'calificación (0–4)'});
+      $('#kpis',root).innerHTML=kpi('Puntaje 5S',fmt(tot,0)+' % '+(tot>=80?pill('ok','meta'):tot>=60?pill('warn','aceptable'):pill('bad','bajo')))+kpi('S más débil',S[low]);
+      const tips=['retirar del área lo que no se usa (tarjeta roja)','definir un lugar para cada cosa y rotularlo','asignar responsables y frecuencia de limpieza','crear estándares visuales y listas de chequeo','auditar cada mes y mostrar los resultados al equipo'];
+      $('#calc',root).innerHTML=`<div class="steps">${step('Puntaje',`${fr(sc.join(' + '),'20')}·100 = ${B(fmt(tot,0)+' %')}`)}${step('Acción para la S más débil',tips[low])}</div>`; return; }
+    if(last!=='pro'){ w.innerHTML='<div id="kt"></div>'; editTable($('#kt',root),'g32t',[{key:'a',label:'Actividad',w:200},{key:'t',label:'Tipo',type:'select',options:['Valor agregado','NVA necesaria','Desperdicio']},{key:'b',label:'Antes (min)',type:'num',w:70},{key:'d',label:'Después (min)',type:'num',w:70}],rows,()=>upd(ctl.v),{blank:()=>({a:'Nueva actividad',t:'Desperdicio',b:5,d:5})}); }
+    last='pro';
+    const Tb=rows.reduce((a,r)=>a+r.b,0), Td=rows.reduce((a,r)=>a+r.d,0), VAb=rows.filter(r=>r.t==='Valor agregado').reduce((a,r)=>a+r.b,0), VAd=rows.filter(r=>r.t==='Valor agregado').reduce((a,r)=>a+r.d,0), Wb=rows.filter(r=>r.t==='Desperdicio').reduce((a,r)=>a+r.b,0), Wd=rows.filter(r=>r.t==='Desperdicio').reduce((a,r)=>a+r.d,0);
+    const n=rows.length;
+    P(root,'p1',{series:[{x:rows.map((_,i)=>i+1-0.18),y:rows.map(r=>r.b),bars:true,bw:0.34,color:'s6',label:'antes'},{x:rows.map((_,i)=>i+1+0.18),y:rows.map(r=>r.d),bars:true,bw:0.34,color:'s3',label:'después'}],xcats:rows.map(r=>r.a.length>14?r.a.slice(0,13)+'…':r.a),xlim:[0.4,n+0.6],ylabel:'minutos',yzero:true});
+    const red=Tb?(Tb-Td)/Tb*100:0;
+    $('#kpis',root).innerHTML=kpi('Tiempo total',fmt(Tb,0)+' → '+fmt(Td,0)+' min')+kpi('Reducción',fmt(red,1)+' %')+kpi('Valor agregado',fmt(Tb?VAb/Tb*100:0,0)+' % → '+fmt(Td?VAd/Td*100:0,0)+' %')+kpi('Desperdicio eliminado',fmt(Wb-Wd,0)+' min');
+    $('#calc',root).innerHTML=`<div class="steps">
+      ${step('1. Tiempo antes',`${rows.map(r=>fmt(r.b,0)).join(' + ')} = ${B(fmt(Tb,0)+' min')}`)}
+      ${step('2. Tiempo después',`${rows.map(r=>fmt(r.d,0)).join(' + ')} = ${B(fmt(Td,0)+' min')}`)}
+      ${step('3. Reducción',`${fr(fmt(Tb,0)+' − '+fmt(Td,0),fmt(Tb,0))}·100 = ${B(fmt(red,1)+' %')}`)}
+      ${step('4. Proporción de valor agregado',`antes ${fr(fmt(VAb,0),fmt(Tb,0))} = ${B(fmt(Tb?VAb/Tb*100:0,1)+' %')} · después ${fr(fmt(VAd,0),fmt(Td,0))} = ${B(fmt(Td?VAd/Td*100:0,1)+' %')}`)}
+      ${step('5. Otros indicadores del caso de clase',`errores 12 → 5: ${B('−58,3 %')} · reprocesos 15 → 6: ${B('−60 %')}`)}
+    </div>`;
+  }
+  ctl.fire();
+}};
+
+/* ---------- 3.3 ---------- */
+MODS.m33={unit:3,code:'3.3',title:'Value Stream Mapping',nav:'Value Stream Mapping',
+init(root){
+  const R0=[{n:'Admisión',tc:8,w:20,r:2,va:false},{n:'Triage',tc:5,w:15,r:1,va:true},{n:'Valoración médica',tc:20,w:60,r:3,va:true},{n:'Laboratorio e imágenes',tc:45,w:90,r:2,va:true},{n:'Decisión de hospitalización',tc:10,w:30,r:2,va:true},{n:'Asignación de cama',tc:15,w:180,r:1,va:false}];
+  root.innerHTML=layout({unit:3,code:'3.3',title:this.title,
+    lead:'El mapa de flujo de valor (VSM) dibuja en una sola imagen todo el recorrido del paciente, con tiempos reales de cada paso y de las esperas entre pasos. Muestra cuánto del tiempo total agrega valor y dónde está el cuello de botella.',
+    caso:'Ruta del paciente desde que llega a urgencias hasta que recibe cama en hospitalización (ejemplo de clase). Llegan 72 pacientes al día que terminan hospitalizados y el servicio funciona 24 horas. Cada paso tiene su tiempo de ciclo, la espera previa y el número de personas o equipos que atienden en paralelo. Todo se puede editar.',
+    theory:`<p><b>Pasos para hacerlo:</b> 1) elegir la familia de pacientes (por ejemplo, urgencias que se hospitalizan); 2) caminar el proceso en el sitio (gemba) y tomar tiempos con cronómetro; 3) dibujar el estado actual; 4) calcular las métricas; 5) diseñar el estado futuro y un plan de acción.</p>
+    <p><b>Métricas:</b> lead time (tiempo total), tiempo de valor agregado, eficiencia del ciclo (PCE) y takt time. Un paso cuyo tiempo de ciclo efectivo supera el takt no alcanza a atender la demanda: es el cuello de botella y ahí se forman las colas.</p>
+    <p><b>Errores comunes:</b> mapear de memoria, usar tiempos estándar en lugar de reales, mapear todo el hospital a la vez y no involucrar a quienes hacen el trabajo.</p>`,
+    formulas: eq('Takt = tiempo disponible/demanda')+eq('TC<sub>ef</sub> = TC/recursos')+eq('LT = Σ(TC + espera)')+eq('PCE = VA/LT · 100'),
+    work:true,
+    plots:[{id:'p1',cap:'Tiempo de ciclo efectivo vs. takt time'}],
+    practiceTitle:'Casos y ejercicios',
+    practice:[
+      ['Caso para resolver: propone el estado futuro del ejemplo. ¿Qué cambiarías primero?','La espera de cama (180 min) es el mayor desperdicio y la asignación (TC efectivo 15 min con 1 persona) no es el cuello de botella por capacidad sino por información: se propone alta temprana antes de las 11 a. m., tablero visual de camas y aviso a admisiones desde la decisión médica. Luego atacar laboratorio (90 min de espera).'],
+      ['Ejercicio: el servicio opera 1440 min y la demanda es 72 pacientes. ¿Cuál es el takt?','1440/72 = 20 min por paciente.'],
+      ['Ejercicio: laboratorio tarda 45 min por paciente con 2 equipos. ¿Es cuello de botella con un takt de 20 min?','TC efectivo = 45/2 = 22,5 min > 20 min. Sí: necesita un tercer recurso o reducir el tiempo de ciclo.'],
+      ['Ejercicio: LT = 498 min y VA = 80 min. ¿Cuál es la PCE?','80/498·100 = 16,1 %. El paciente pasa el 84 % del tiempo esperando.']]
+  });
+  const ctl=makeControls($('#ctl',root),'g33',[
+    {id:'av',label:'Tiempo disponible por día',min:480,max:1440,step:60,value:1440,unit:'min',dec:0},
+    {id:'dm',label:'Demanda',min:10,max:200,step:1,value:72,unit:'pac/día',dec:0}],upd);
+  const rows=R0.map(x=>({...x}));
+  $('#work',root).innerHTML='<div id="vt"></div><div id="vsm"></div>';
+  editTable($('#vt',root),'g33t',[{key:'n',label:'Paso',w:180},{key:'tc',label:'TC (min)',type:'num',w:64},{key:'w',label:'Espera previa (min)',type:'num',w:64},{key:'r',label:'Recursos',type:'num',step:1,w:56},{key:'va',label:'¿Agrega valor?',type:'check'}],rows,()=>upd(ctl.v),{blank:()=>({n:'Nuevo paso',tc:10,w:10,r:1,va:true})});
+  function upd(v){
+    const takt=v.av/v.dm, eff=rows.map(r=>r.tc/Math.max(1,r.r)), LT=rows.reduce((a,r)=>a+r.tc+r.w,0), VA=rows.filter(r=>r.va).reduce((a,r)=>a+r.tc,0), W=rows.reduce((a,r)=>a+r.w,0);
+    const bi=eff.indexOf(Math.max(...eff)), n=rows.length;
+    P(root,'p1',{series:rows.map((r,i)=>({x:[i+1],y:[eff[i]],bars:true,color:eff[i]>takt?'s2':'s1'})),xcats:rows.map(r=>r.n.length>13?r.n.slice(0,12)+'…':r.n),xlim:[0.4,n+0.6],hlines:[{y:takt,color:'s4',label:'takt '+fmt(takt,1)+' min'}],ylabel:'min/paciente',yzero:true});
+    $('#vsm',root).innerHTML=`<h4>Mapa del estado actual</h4><div class="vsm">${rows.map((r,i)=>`<div class="vw"><span class="tri">▲</span><small>${fmt(r.w,0)} min</small></div><div class="vb ${i===bi?'bn':''}"><b>${esc(r.n)}</b><small>TC ${fmt(r.tc,0)} min</small><small>${fmt(r.r,0)} recurso(s)</small>${r.va?'<small class="va">VA</small>':''}</div>`).join('')}</div>
+      <div class="ladder"><span>Espera: ${fmt(W,0)} min</span><span>Proceso: ${fmt(LT-W,0)} min</span><span>Lead time: ${fmt(LT,0)} min (${fmt(LT/60,1)} h)</span></div>`;
+    $('#kpis',root).innerHTML=kpi('Takt time',fmt(takt,1)+' min')+kpi('Lead time',fmt(LT,0)+' min ('+fmt(LT/60,1)+' h)')+kpi('PCE',fmt(VA/LT*100,1)+' %')+kpi('Cuello de botella',esc(rows[bi]?.n||'—')+' '+(eff[bi]>takt?pill('bad','> takt'):pill('ok','≤ takt')));
+    $('#calc',root).innerHTML=`<div class="steps">
+      ${step('1. Takt time',`${fr(fmt(v.av,0),fmt(v.dm,0))} = ${B(fmt(takt,2)+' min/paciente')}`)}
+      ${step('2. Tiempos de ciclo efectivos',rows.map((r,i)=>`${esc(r.n)}: ${fmt(r.tc,0)}/${fmt(r.r,0)} = ${B(fmt(eff[i],1))}`).join('<br>'))}
+      ${step('3. Lead time',`Σ TC + Σ espera = ${fmt(LT-W,0)} + ${fmt(W,0)} = ${B(fmt(LT,0)+' min')}`)}
+      ${step('4. Tiempo de valor agregado',`${B(fmt(VA,0)+' min')}`)}
+      ${step('5. Eficiencia del ciclo',`${fr(fmt(VA,0),fmt(LT,0))}·100 = ${B(fmt(VA/LT*100,1)+' %')}`)}
+      ${step('6. Recursos para el cuello de botella',`⌈${fmt(rows[bi]?.tc||0,0)}/${fmt(takt,1)}⌉ = ${B(String(Math.ceil((rows[bi]?.tc||0)/takt)))}`)}
+    </div>`;
+  }
+  ctl.fire();
+}};
+
+/* ---------- 4.1 ---------- */
+MODS.m41={unit:4,code:'4.1',title:'Proyecto y operación',nav:'Proyecto y operación',
+init(root){
+  const IT=[['Atender la consulta externa diaria','O'],['Implementar un software de historia clínica','P'],['Procesar muestras en el laboratorio','O'],['Construir una nueva UCI neonatal','P'],['Hacer el mantenimiento preventivo mensual','O','Es repetitivo: se planea cada año igual.'],['Obtener la acreditación en salud','P'],['Facturar los servicios a las EPS','O'],['Renovar los ventiladores de la UCI','P'],['Esterilizar el instrumental quirúrgico','O'],['Diseñar un programa de tecnovigilancia','P','Una vez diseñado e implementado, su ejecución pasa a ser operación.']];
+  root.innerHTML=layout({unit:4,code:'4.1',title:this.title,
+    lead:'La operación es el trabajo repetitivo que sostiene el servicio. Un proyecto es un esfuerzo temporal, con inicio y fin, para crear un resultado único. Las mejoras que salen de Kaizen o del VSM se ejecutan como proyectos.',
+    caso:'El departamento de biomédica propone comprar e implementar un software de gestión de mantenimiento (CMMS). Cuesta una inversión inicial, genera ahorros por menos equipos fuera de servicio y menos horas administrativas, y tiene un costo anual de licencia. La gerencia pide el caso de negocio: VPN, TIR y periodo de recuperación.',
+    theory:`<div class="tbl"><table><tr><th></th><th>Proyecto</th><th>Operación</th></tr><tr><td>Duración</td><td>temporal, con inicio y fin</td><td>continua</td></tr><tr><td>Resultado</td><td>único</td><td>repetitivo</td></tr><tr><td>Objetivo</td><td>cumplir el alcance y terminar</td><td>sostener el servicio</td></tr><tr><td>Equipo</td><td>temporal, a menudo matricial</td><td>estable</td></tr><tr><td>Ejemplo</td><td>instalar un tomógrafo</td><td>hacer tomografías</td></tr></table></div>
+    <p><b>Restricción triple:</b> alcance, tiempo y costo están ligados; si uno cambia, los otros se mueven. La calidad queda en el centro.</p>
+    <p><b>Caso de negocio:</b> antes de aprobar un proyecto se evalúa si vale la pena. Los criterios más usados son el valor presente neto (VPN), la tasa interna de retorno (TIR), el periodo de recuperación y la relación beneficio/costo.</p>`,
+    formulas: eq('VPN = −I + Σ FN<sub>t</sub>/(1 + i)<sup>t</sup>')+eq('VPN(TIR) = 0')+eq('PRI: Σ FN<sub>t</sub> ≥ I')+eq('B/C = VP(beneficios)/VP(costos)'),
+    work:true,
+    plots:[{id:'p1',cap:'Flujo de caja acumulado (descontado)'}],
+    practiceTitle:'Casos y ejercicios',
+    practice:[
+      ['Caso para resolver: redacta el acta de constitución resumida del proyecto CMMS.','Objetivo: implementar el CMMS para el 100 % de los equipos en 6 meses. Alcance: inventario, hojas de vida, cronograma, órdenes de trabajo e indicadores. Fuera de alcance: integración con facturación. Presupuesto: $ 120 M. Patrocinador: gerente. Director: jefe de biomédica. Riesgos: resistencia al cambio, datos incompletos del inventario.'],
+      ['Ejercicio: inversión 100, flujo neto 40 por año durante 3 años, tasa 10 %. Calcula el VPN.','VPN = −100 + 40/1,1 + 40/1,21 + 40/1,331 = −100 + 36,36 + 33,06 + 30,05 = −0,53. Por muy poco no se recupera: se rechaza o se negocia el precio.'],
+      ['Ejercicio: con los mismos datos, ¿cuál es el periodo de recuperación simple?','Acumulado: 40, 80, 120. Se recupera entre el año 2 y el 3: 2 + 20/40 = 2,5 años.'],
+      ['Pregunta: ¿por qué la TIR del ejercicio anterior es un poco menos de 10 %?','Porque con i = 10 % el VPN es ligeramente negativo; la TIR es la tasa que lo hace exactamente cero, unos 9,7 %.']]
+  });
+  const ctl=makeControls($('#ctl',root),'g41',[
+    {type:'seg',id:'mode',label:'Actividad',options:[['caso','Caso de negocio'],['cls','¿Proyecto u operación?']],value:'caso'},
+    {id:'I',label:'Inversión inicial',min:10,max:500,step:5,value:120,unit:'$ M',dec:0,showIf:v=>v.mode==='caso'},
+    {id:'A',label:'Ahorro anual',min:5,max:200,step:1,value:45,unit:'$ M',dec:0,showIf:v=>v.mode==='caso'},
+    {id:'C',label:'Costo anual (licencias, soporte)',min:0,max:60,step:1,value:8,unit:'$ M',dec:0,showIf:v=>v.mode==='caso'},
+    {id:'n',label:'Horizonte',min:1,max:10,step:1,value:5,unit:'años',dec:0,showIf:v=>v.mode==='caso'},
+    {id:'i',label:'Tasa de descuento',min:4,max:25,step:0.5,value:12,unit:'%',dec:1,showIf:v=>v.mode==='caso'}],upd);
+  let last='';
+  function upd(v){
+    const w=$('#work',root); show(root,'p1',v.mode==='caso');
+    if(v.mode==='cls'){ if(last!=='cls'){ w.innerHTML='<h4 style="margin-top:0">Clasifica cada actividad de un hospital</h4><div id="cl"></div>'; classifier($('#cl',root),'g41c',IT,[['P','Proyecto'],['O','Operación']]); } last='cls'; $('#kpis',root).innerHTML=''; $('#calc',root).innerHTML='<p class="note">Pregunta guía: ¿tiene una fecha de fin y produce algo que antes no existía?</p>'; return; }
+    last='caso'; w.innerHTML='';
+    const i=v.i/100, FN=v.A-v.C; const npv=r=>{ let s=-v.I; for(let t=1;t<=v.n;t++) s+=FN/Math.pow(1+r,t); return s; };
+    const VPN=npv(i); let lo=-0.99,hi=10,irr=NaN; if(npv(lo)*npv(hi)<0){ for(let k=0;k<200;k++){ const m=(lo+hi)/2; if(npv(lo)*npv(m)<=0) hi=m; else lo=m; } irr=(lo+hi)/2; }
+    let acc=-v.I, accD=-v.I, pri=NaN, priD=NaN; const t=[0],cs=[-v.I],cd=[-v.I];
+    for(let k=1;k<=v.n;k++){ const pa=acc; acc+=FN; const pd=accD; accD+=FN/Math.pow(1+i,k); if(isNaN(pri)&&acc>=0) pri=k-1+(-pa)/FN; if(isNaN(priD)&&accD>=0) priD=k-1+(-pd)/(FN/Math.pow(1+i,k)); t.push(k); cs.push(acc); cd.push(accD); }
+    let vpA=0,vpC=0; for(let k=1;k<=v.n;k++){ vpA+=v.A/Math.pow(1+i,k); vpC+=v.C/Math.pow(1+i,k); } const BC=vpA/(v.I+vpC);
+    P(root,'p1',{series:[{x:t,y:cs,color:'s6',dash:[6,4],label:'acumulado simple'},{x:t,y:cd,color:'s1',label:'acumulado descontado'}],points:t.map((x,k)=>({x,y:cd[k],shape:'dot',color:cd[k]>=0?'s3':'s2',size:4})),axes0:true,xlabel:'año',ylabel:'$ M'});
+    $('#kpis',root).innerHTML=kpi('VPN',money(VPN)+' '+(VPN>=0?pill('ok','aceptar'):pill('bad','rechazar')))+kpi('TIR',isNaN(irr)?'—':fmt(irr*100,1)+' %')+kpi('Recuperación',isNaN(pri)?'no se recupera':fmt(pri,2)+' años (desc. '+(isNaN(priD)?'no':fmt(priD,2))+')')+kpi('B/C',fmt(BC,2));
+    $('#calc',root).innerHTML=`<div class="steps">
+      ${step('1. Flujo neto anual',`FN = ${fmt(v.A,0)} − ${fmt(v.C,0)} = ${B(money(FN))}`)}
+      ${step('2. Valor presente de los flujos',`Σ ${fr(fmt(FN,0),'(1 + '+fmt(i,3)+')<sup>t</sup>')}, t = 1…${v.n} = ${B(money(VPN+v.I))}`)}
+      ${step('3. VPN',`−${fmt(v.I,0)} + ${fmt(VPN+v.I,2)} = ${B(money(VPN))}`)}
+      ${step('4. TIR (VPN = 0)',B(isNaN(irr)?'no existe en el rango':fmt(irr*100,2)+' %')+` frente a ${fmt(v.i,1)} % exigido`)}
+      ${step('5. Periodo de recuperación simple',isNaN(pri)?'no se recupera':`${B(fmt(pri,2)+' años')}`)}
+      ${step('6. Beneficio/costo',`${fr(fmt(vpA,1),fmt(v.I,0)+' + '+fmt(vpC,1))} = ${B(fmt(BC,3))}`)}
+    </div><div class="tbl" style="margin-top:10px"><table><tr><th>Año</th><th>Flujo</th><th>Factor 1/(1+i)<sup>t</sup></th><th>Valor presente</th><th>Acumulado descontado</th></tr>${t.map((k,j)=>`<tr><td class="mono">${k}</td><td class="mono">${k?fmt(FN,1):fmt(-v.I,1)}</td><td class="mono">${fmt(1/Math.pow(1+i,k),4)}</td><td class="mono">${fmt(k?FN/Math.pow(1+i,k):-v.I,2)}</td><td class="mono">${fmt(cd[j],2)}</td></tr>`).join('')}</table></div>`;
+  }
+  ctl.fire();
+}};
+
+/* ---------- 4.2 ---------- */
+MODS.m42={unit:4,code:'4.2',title:'Ciclo de vida de un proyecto',nav:'Ciclo de vida del proyecto',
+init(root){
+  const A0=[{id:'A',n:'Estudio de necesidades y viabilidad',d:2,p:''},{id:'B',n:'Especificaciones técnicas',d:2,p:'A'},{id:'C',n:'Proceso de compra (licitación)',d:4,p:'B'},{id:'D',n:'Adecuación de la sala (blindaje, eléctrica, aire)',d:6,p:'A'},{id:'E',n:'Fabricación, importación y entrega',d:8,p:'C'},{id:'F',n:'Instalación',d:2,p:'D,E'},{id:'G',n:'Pruebas de aceptación y control de calidad',d:1,p:'F'},{id:'H',n:'Capacitación del personal',d:2,p:'F'},{id:'I',n:'Licencia y habilitación del servicio',d:3,p:'G,H'}];
+  root.innerHTML=layout({unit:4,code:'4.2',title:this.title,
+    lead:'Todo proyecto pasa por cinco grupos de procesos: inicio, planificación, ejecución, monitoreo y control, y cierre. En la planificación se calcula la ruta crítica; durante la ejecución se controla con el valor ganado.',
+    caso:'Proyecto de adquisición e instalación de un tomógrafo en una clínica. Las actividades, sus duraciones (semanas) y sus predecesoras se pueden editar. Se calcula la ruta crítica con el método CPM. En el segundo modo, a mitad del proyecto, se evalúa el avance con valor ganado.',
+    theory:`<div class="tbl"><table><tr><th>Fase</th><th>Pregunta</th><th>Entregable típico</th></tr><tr><td>Inicio</td><td>¿Por qué y para qué?</td><td>Acta de constitución, interesados</td></tr><tr><td>Planificación</td><td>¿Qué, cuándo, cuánto, quién?</td><td>EDT, cronograma, presupuesto, matriz de riesgos</td></tr><tr><td>Ejecución</td><td>Hacer el trabajo</td><td>Entregables, compras, comunicaciones</td></tr><tr><td>Monitoreo y control</td><td>¿Vamos bien?</td><td>Informes de avance, control de cambios, valor ganado</td></tr><tr><td>Cierre</td><td>¿Se cumplió?</td><td>Acta de entrega, lecciones aprendidas</td></tr></table></div>
+    <p><b>Ruta crítica (CPM):</b> la cadena de actividades con holgura cero. Si cualquiera se atrasa, se atrasa todo el proyecto. Para acortar el proyecto solo sirve acortar actividades críticas.</p>
+    <p><b>Valor ganado (EVM):</b> compara lo planeado (PV), lo hecho valorado al presupuesto (EV) y lo realmente gastado (AC).</p>`,
+    formulas: eq('ES = máx(EF<sub>pred</sub>) · EF = ES + d')+eq('LF = mín(LS<sub>suc</sub>) · LS = LF − d')+eq('H = LS − ES')+eq('SPI = EV/PV · CPI = EV/AC · EAC = BAC/CPI'),
+    work:true,
+    plots:[{id:'p1',cap:'Valor ganado'}],
+    practiceTitle:'Casos y ejercicios',
+    practice:[
+      ['Caso para resolver: la importación (E) se atrasa 3 semanas. ¿Cuánto se mueve la fecha final? ¿Y si se atrasa la adecuación de la sala (D) 3 semanas?','E es crítica: el proyecto se atrasa 3 semanas. D tiene holgura de 8 semanas: absorbe el atraso sin mover el final.'],
+      ['Ejercicio: actividad con ES = 4, d = 3 y LF = 10. ¿Cuál es su holgura?','EF = 7, LS = 10 − 3 = 7. Holgura = 7 − 4 = 3 semanas.'],
+      ['Ejercicio: BAC = 400, PV = 200, EV = 160, AC = 190. Interpreta.','SPI = 0,80 (atrasado 20 %). CPI = 0,84 (sobrecosto). EAC = 400/0,84 = 475: costará unos 75 M más si sigue igual.'],
+      ['Pregunta: ¿qué documentos se generan en el cierre?','Acta de entrega y recibo a satisfacción, informe final, liberación de recursos, archivo del proyecto y lecciones aprendidas.']]
+  });
+  const ctl=makeControls($('#ctl',root),'g42',[
+    {type:'seg',id:'mode',label:'Herramienta',options:[['cpm','Ruta crítica'],['evm','Valor ganado']],value:'cpm'},
+    {id:'bac',label:'Presupuesto total BAC',min:50,max:1000,step:10,value:400,unit:'$ M',dec:0,showIf:v=>v.mode==='evm'},
+    {id:'pp',label:'Avance planeado a la fecha',min:0,max:100,step:1,value:50,unit:'%',dec:0,showIf:v=>v.mode==='evm'},
+    {id:'pr',label:'Avance real a la fecha',min:0,max:100,step:1,value:40,unit:'%',dec:0,showIf:v=>v.mode==='evm'},
+    {id:'ac',label:'Costo real gastado AC',min:0,max:1000,step:5,value:190,unit:'$ M',dec:0,showIf:v=>v.mode==='evm'}],upd);
+  const rows=A0.map(x=>({...x})); let last='';
+  function cpm(){
+    const map={}, errs=[]; rows.forEach(r=>{ const k=String(r.id).trim(); if(map[k]) errs.push('id repetido: '+k); map[k]=r; r._p=String(r.p||'').split(/[,; ]+/).map(s=>s.trim()).filter(Boolean); });
+    rows.forEach(r=>r._p.forEach(p=>{ if(!map[p]) errs.push(`“${r.id}” tiene una predecesora que no existe: ${p}`); }));
+    if(errs.length) return {errs};
+    const order=[], st={}; let cyc=false; const visit=k=>{ if(st[k]===2) return; if(st[k]===1){ cyc=true; return; } st[k]=1; map[k]._p.forEach(visit); st[k]=2; order.push(k); };
+    Object.keys(map).forEach(visit); if(cyc) return {errs:['hay un ciclo entre las predecesoras']};
+    order.forEach(k=>{ const r=map[k]; r.ES=r._p.length?Math.max(...r._p.map(p=>map[p].EF)):0; r.EF=r.ES+Math.max(0,r.d); });
+    const T=Math.max(...rows.map(r=>r.EF));
+    [...order].reverse().forEach(k=>{ const r=map[k]; const suc=rows.filter(s=>s._p.includes(k)); r.LF=suc.length?Math.min(...suc.map(s=>s.LS)):T; r.LS=r.LF-Math.max(0,r.d); r.H=r.LS-r.ES; });
+    return {T,order};
+  }
+  function upd(v){
+    const w=$('#work',root); show(root,'p1',v.mode==='evm');
+    if(v.mode==='evm'){ last='evm'; w.innerHTML='';
+      const PV=v.bac*v.pp/100, EV=v.bac*v.pr/100, AC=v.ac, SV=EV-PV, CV=EV-AC, SPI=PV?EV/PV:NaN, CPI=AC?EV/AC:NaN, EAC=CPI?v.bac/CPI:NaN, ETC=EAC-AC, VAC=v.bac-EAC, TCPI=(v.bac-EV)/(v.bac-AC);
+      P(root,'p1',{series:[{x:[1],y:[PV],bars:true,color:'s6'},{x:[2],y:[EV],bars:true,color:'s3'},{x:[3],y:[AC],bars:true,color:'s2'},{x:[4],y:[EAC],bars:true,color:'s4'}],xcats:['PV planeado','EV ganado','AC real','EAC pronóstico'],xlim:[0.4,4.6],hlines:[{y:v.bac,color:'s1',label:'BAC'}],ylabel:'$ M',yzero:true});
+      const s=x=>x>=1?pill('ok','bien'):x>=0.9?pill('warn','alerta'):pill('bad','mal');
+      $('#kpis',root).innerHTML=kpi('SPI (cronograma)',fmt(SPI,3)+' '+s(SPI))+kpi('CPI (costo)',fmt(CPI,3)+' '+s(CPI))+kpi('EAC',money(EAC))+kpi('VAC',money(VAC));
+      $('#calc',root).innerHTML=`<div class="steps">
+        ${step('1. Valor planeado',`PV = ${fmt(v.bac,0)}·${fmt(v.pp/100,2)} = ${B(money(PV))}`)}
+        ${step('2. Valor ganado',`EV = ${fmt(v.bac,0)}·${fmt(v.pr/100,2)} = ${B(money(EV))}`)}
+        ${step('3. Variaciones',`SV = EV − PV = ${B(money(SV))} &nbsp; CV = EV − AC = ${B(money(CV))}`)}
+        ${step('4. Índices',`SPI = ${fr(fmt(EV,1),fmt(PV,1))} = ${B(fmt(SPI,3))} &nbsp; CPI = ${fr(fmt(EV,1),fmt(AC,1))} = ${B(fmt(CPI,3))}`)}
+        ${step('5. Pronóstico',`EAC = ${fr(fmt(v.bac,0),fmt(CPI,3))} = ${B(money(EAC))} &nbsp; ETC = ${B(money(ETC))}`)}
+        ${step('6. Eficiencia que se necesita de aquí en adelante',`TCPI = ${fr(fmt(v.bac,0)+' − '+fmt(EV,1),fmt(v.bac,0)+' − '+fmt(AC,1))} = ${B(fmt(TCPI,3))}`)}
+      </div>`; return; }
+    if(last!=='cpm'){ w.innerHTML='<div id="ct"></div><div id="gantt"></div>'; editTable($('#ct',root),'g42t',[{key:'id',label:'ID',w:40},{key:'n',label:'Actividad',w:250},{key:'d',label:'Duración (sem)',type:'num',w:60},{key:'p',label:'Predecesoras',w:80}],rows,()=>upd(ctl.v),{blank:()=>({id:String.fromCharCode(65+rows.length),n:'Nueva actividad',d:1,p:''})}); }
+    last='cpm';
+    const r=cpm();
+    if(r.errs){ $('#gantt',root).innerHTML=`<p class="note alert">${r.errs.join('. ')}</p>`; $('#kpis',root).innerHTML=''; $('#calc',root).innerHTML=''; return; }
+    const crit=rows.filter(x=>x.H===0), T=r.T;
+    $('#gantt',root).innerHTML=`<h4>Diagrama de Gantt</h4><div class="gantt">${rows.map(x=>`<div class="gr"><span>${esc(x.id)} · ${esc(x.n)}</span><div class="gb"><i class="${x.H===0?'cr':''}" style="left:${x.ES/T*100}%;width:${Math.max(0.5,x.d/T*100)}%"></i>${x.H>0?`<i class="sl" style="left:${x.EF/T*100}%;width:${x.H/T*100}%"></i>`:''}</div></div>`).join('')}<div class="gr"><span></span><div class="gax">${Array.from({length:Math.floor(T)+1},(_,k)=>k%Math.max(1,Math.ceil(T/12))===0?`<b style="left:${k/T*100}%">${k}</b>`:'').join('')}</div></div></div>`;
+    $('#kpis',root).innerHTML=kpi('Duración del proyecto',fmt(T,1)+' semanas')+kpi('Ruta crítica',crit.map(x=>x.id).join(' → '))+kpi('Actividades críticas',crit.length+' de '+rows.length)+kpi('Mayor holgura',fmt(Math.max(...rows.map(x=>x.H)),1)+' sem');
+    $('#calc',root).innerHTML=`<div class="tbl"><table><tr><th>ID</th><th>d</th><th>ES</th><th>EF = ES + d</th><th>LS = LF − d</th><th>LF</th><th>Holgura</th></tr>${rows.map(x=>`<tr${x.H===0?' style="font-weight:600"':''}><td>${esc(x.id)}</td><td class="mono">${fmt(x.d,1)}</td><td class="mono">${fmt(x.ES,1)}</td><td class="mono">${fmt(x.EF,1)}</td><td class="mono">${fmt(x.LS,1)}</td><td class="mono">${fmt(x.LF,1)}</td><td class="mono">${fmt(x.H,1)}${x.H===0?' (crítica)':''}</td></tr>`).join('')}</table></div><p class="note">ES de una actividad es el mayor EF de sus predecesoras. LF es el menor LS de sus sucesoras. Holgura = LS − ES.</p>`;
+  }
+  ctl.fire();
+}};
+
+/* ---------- 4.3 ---------- */
+MODS.m43={unit:4,code:'4.3',title:'Modelo Lean Six Sigma aplicado al sector salud',nav:'Lean Six Sigma',
+init(root){
+  root.innerHTML=layout({unit:4,code:'4.3',title:this.title,
+    lead:'Lean elimina desperdicios para que el proceso fluya; Six Sigma reduce la variación para que el resultado sea predecible. Juntos se aplican con el ciclo DMAIC y se miden con DPMO, nivel sigma y capacidad del proceso.',
+    caso:'(a) Dispensación de medicamentos en hospitalización: cada orden tiene 3 oportunidades de error (medicamento, dosis y paciente correctos). Se revisan las órdenes del mes y se cuentan los errores. (b) Tiempo de entrega de resultados de laboratorio urgentes: la especificación es entregar en menos de 60 minutos.',
+    theory:`<div class="tbl"><table><tr><th>Fase DMAIC</th><th>Qué se hace</th><th>Herramientas</th></tr><tr><td>Definir</td><td>Problema, alcance, voz del cliente</td><td>Project charter, SIPOC</td></tr><tr><td>Medir</td><td>Línea base con datos confiables</td><td>DPMO, capacidad, VSM</td></tr><tr><td>Analizar</td><td>Causas raíz</td><td>Ishikawa, Pareto, 5 porqués, regresión</td></tr><tr><td>Mejorar</td><td>Probar soluciones</td><td>Kaizen, poka-yoke, pilotos</td></tr><tr><td>Controlar</td><td>Sostener</td><td>Gráficas de control, estándares</td></tr></table></div>
+    <p>Un proceso <b>seis sigma</b> produce 3,4 defectos por millón de oportunidades (con el corrimiento de 1,5σ). Muchos procesos de salud están entre 3 y 4 sigma. <b>Poka-yoke</b> significa diseño a prueba de errores, por ejemplo conectores que no encajan en la vía equivocada o código de barras en la pulsera del paciente.</p>`,
+    formulas: eq('DPMO = D/(U·O) · 10⁶')+eq('Y = 1 − D/(U·O)')+eq('σ<sub>nivel</sub> = Φ⁻¹(Y) + 1,5')+eq('C<sub>p</sub> = (LSE − LIE)/(6σ) · C<sub>pk</sub> = mín((LSE − μ)/3σ, (μ − LIE)/3σ)'),
+    plots:[{id:'p1',cap:'Resultado'}],
+    practiceTitle:'Casos y ejercicios',
+    practice:[
+      ['Caso para resolver: plantea un proyecto DMAIC para reducir las flebitis asociadas a catéter periférico.','D: tasa actual 8 %, meta 3 % en 6 meses. M: auditoría diaria con escala de Maddox. A: Pareto de causas (permanencia > 72 h, fijación inadecuada). I: paquete de inserción y alerta de cambio a las 72 h. C: gráfica p semanal y auditorías.'],
+      ['Ejercicio: 38 errores en 2400 órdenes con 3 oportunidades. Calcula DPMO y nivel sigma.','DPMO = 38/(2400·3)·10⁶ = 5278. Y = 0,99472 → Φ⁻¹ = 2,56 → nivel ≈ 4,06 σ.'],
+      ['Ejercicio: μ = 48 min, σ = 8 min, LSE = 60 min. ¿Cuánto vale C<sub>pk</sub> superior y qué porcentaje se pasa?','C<sub>pk</sub> = (60 − 48)/(3·8) = 0,5. Z = 1,5 → 6,7 % de los resultados llega tarde.'],
+      ['Pregunta: ¿qué conviene más para subir el C<sub>pk</sub>: bajar la media o reducir la variación?','Ambas ayudan. Bajar la media mueve el proceso lejos del límite; reducir σ lo estrecha. Six Sigma se enfoca en σ porque una media buena con mucha variación sigue produciendo pacientes que esperan demasiado.']]
+  });
+  const ctl=makeControls($('#ctl',root),'g43',[
+    {type:'seg',id:'mode',label:'Análisis',options:[['dp','DPMO y nivel sigma'],['cp','Capacidad del proceso']],value:'dp'},
+    {id:'D',label:'Errores encontrados D',min:0,max:500,step:1,value:38,dec:0,showIf:v=>v.mode==='dp'},
+    {id:'U',label:'Órdenes revisadas U',min:100,max:20000,step:100,value:2400,dec:0,showIf:v=>v.mode==='dp'},
+    {id:'O',label:'Oportunidades por orden O',min:1,max:10,step:1,value:3,dec:0,showIf:v=>v.mode==='dp'},
+    {id:'mu',label:'Tiempo medio μ',min:15,max:90,step:1,value:48,unit:'min',dec:0,showIf:v=>v.mode==='cp'},
+    {id:'sd',label:'Desviación estándar σ',min:1,max:20,step:0.5,value:8,unit:'min',dec:1,showIf:v=>v.mode==='cp'},
+    {id:'usl',label:'Límite superior LSE',min:30,max:120,step:5,value:60,unit:'min',dec:0,showIf:v=>v.mode==='cp'},
+    {id:'lsl',label:'Límite inferior LIE',min:0,max:40,step:1,value:0,unit:'min',dec:0,showIf:v=>v.mode==='cp'}],upd);
+  function upd(v){
+    if(v.mode==='dp'){
+      const opp=v.U*v.O, dpmo=v.D/opp*1e6, Y=1-v.D/opp, sig=v.D===0?6:invPhi(Y)+1.5;
+      const x=[],y=[]; for(let i=0;i<=200;i++){ const s=1+5.5*i/200; x.push(s); y.push((1-Phi(s-1.5))*1e6); }
+      P(root,'p1',{series:[{x,y,color:'s1',label:'DPMO según nivel sigma'}],points:[{x:sig,y:Math.max(dpmo,3.4),color:'s2',text:fmt(sig,2)+' σ'}],xlabel:'nivel sigma',ylabel:'DPMO (escala log)',xlim:[1,6.5]});
+      const cv=root.querySelector('#p1'); const o=cv._o; o.series[0].y=o.series[0].y.map(v=>Math.log10(v)); o.points[0].y=Math.log10(Math.max(dpmo,3.4)); o.ylabel='log₁₀ DPMO'; drawPlot(cv,o);
+      $('#kpis',root).innerHTML=kpi('DPMO',fmt(dpmo,0))+kpi('Rendimiento',fmt(Y*100,3)+' %')+kpi('Nivel sigma',fmt(sig,2)+' σ')+kpi('Errores por cada 1000 órdenes',fmt(v.D/v.U*1000,2));
+      $('#calc',root).innerHTML=`<div class="steps">
+        ${step('1. Oportunidades totales',`U·O = ${fmt(v.U,0)}·${v.O} = ${B(fmt(opp,0))}`)}
+        ${step('2. DPMO',`${fr(fmt(v.D,0),fmt(opp,0))}·10⁶ = ${B(fmt(dpmo,1))}`)}
+        ${step('3. Rendimiento',`Y = 1 − ${fmt(v.D/opp,6)} = ${B(fmt(Y,6))}`)}
+        ${step('4. Valor Z de corto plazo',`Φ⁻¹(${fmt(Y,5)}) = ${B(fmt(sig-1.5,3))}`)}
+        ${step('5. Nivel sigma',`${fmt(sig-1.5,3)} + 1,5 = ${B(fmt(sig,2)+' σ')}`)}
+      </div><div class="tbl" style="margin-top:10px"><table><tr><th>Nivel sigma</th><th>DPMO</th><th>Rendimiento</th></tr>${[2,3,4,5,6].map(s=>`<tr><td class="mono">${s}</td><td class="mono">${fmt((1-Phi(s-1.5))*1e6,1)}</td><td class="mono">${fmt(Phi(s-1.5)*100,4)} %</td></tr>`).join('')}</table></div>`;
+      return;
+    }
+    const pdf=x=>Math.exp(-0.5*((x-v.mu)/v.sd)**2)/(v.sd*Math.sqrt(2*PI));
+    const lo=Math.min(v.lsl,v.mu-4*v.sd), hi=Math.max(v.usl,v.mu+4*v.sd), x=[],y=[]; for(let i=0;i<=400;i++){ const t=lo+(hi-lo)*i/400; x.push(t); y.push(pdf(t)); }
+    const under=(g,X,Y)=>{ g.fillStyle=CSS('shade'); g.beginPath(); g.moveTo(X(v.usl),Y(0)); for(let i=0;i<=100;i++){ const t=v.usl+(hi-v.usl)*i/100; g.lineTo(X(t),Y(pdf(t))); } g.lineTo(X(hi),Y(0)); g.closePath(); g.fill(); if(v.lsl>lo){ g.beginPath(); g.moveTo(X(lo),Y(0)); for(let i=0;i<=100;i++){ const t=lo+(v.lsl-lo)*i/100; g.lineTo(X(t),Y(pdf(t))); } g.lineTo(X(v.lsl),Y(0)); g.closePath(); g.fill(); } };
+    P(root,'p1',{series:[{x,y,color:'s1',label:'distribución del tiempo de entrega'}],under,vlines:[{x:v.usl,color:'s2',label:'LSE'},{x:v.lsl,color:'s2',label:'LIE'},{x:v.mu,color:'s3',label:'μ'}],xlabel:'minutos',ylabel:'densidad',yzero:true});
+    const cpu=(v.usl-v.mu)/(3*v.sd), cpl=(v.mu-v.lsl)/(3*v.sd), cp=(v.usl-v.lsl)/(6*v.sd), cpk=Math.min(cpu,cpl), out=(1-Phi((v.usl-v.mu)/v.sd))+Phi((v.lsl-v.mu)/v.sd);
+    $('#kpis',root).innerHTML=kpi('C<sub>p</sub>',fmt(cp,2))+kpi('C<sub>pk</sub>',fmt(cpk,2)+' '+(cpk>=1.33?pill('ok','capaz'):cpk>=1?pill('warn','justo'):pill('bad','no capaz')))+kpi('Fuera de especificación',fmt(out*100,2)+' %')+kpi('Nivel sigma aprox.',fmt(3*cpk+1.5,2)+' σ');
+    $('#calc',root).innerHTML=`<div class="steps">
+      ${step('1. Capacidad potencial',`C<sub>p</sub> = ${fr(fmt(v.usl,0)+' − '+fmt(v.lsl,0),'6·'+fmt(v.sd,1))} = ${B(fmt(cp,3))}`)}
+      ${step('2. Capacidad superior',`C<sub>pu</sub> = ${fr(fmt(v.usl,0)+' − '+fmt(v.mu,0),'3·'+fmt(v.sd,1))} = ${B(fmt(cpu,3))}`)}
+      ${step('3. Capacidad inferior',`C<sub>pl</sub> = ${fr(fmt(v.mu,0)+' − '+fmt(v.lsl,0),'3·'+fmt(v.sd,1))} = ${B(fmt(cpl,3))}`)}
+      ${step('4. C<sub>pk</sub>',`mín(${fmt(cpu,3)}; ${fmt(cpl,3)}) = ${B(fmt(cpk,3))}`)}
+      ${step('5. Fracción fuera',`P(X > LSE) = 1 − Φ(${fmt((v.usl-v.mu)/v.sd,2)}) = ${B(fmt((1-Phi((v.usl-v.mu)/v.sd))*100,3)+' %')}`)}
+      ${step('6. σ necesaria para C<sub>pk</sub> = 1,33',`σ = ${fr(fmt(Math.min(v.usl-v.mu,v.mu-v.lsl),1),'3·1,33')} = ${B(fmt(Math.min(v.usl-v.mu,v.mu-v.lsl)/4,2)+' min')}`)}
+    </div>`;
+  }
+  ctl.fire();
+}};
+
+/* ---------- inicio y formulario ---------- */
+const UNITS=[
+  {n:1,title:'Gestión de calidad',mods:['m11','m12','m13']},
+  {n:2,title:'Gerencia estratégica',mods:['m21','m22','m23']},
+  {n:3,title:'Herramientas para la mejora continua en salud',mods:['m31','m32','m33']},
+  {n:4,title:'Estructura de proyectos',mods:['m41','m42','m43']}];
+const BLURB={m11:'Línea de tiempo y costos de la (no) calidad',m12:'Mapa de procesos e indicadores de eficacia y eficiencia',m13:'Autodiagnóstico frente a las cláusulas 4 a 10',m21:'MEFI, MEFE, matriz IE y objetivos SMART',m22:'Personal de biomédica, tramo de control y organigrama',m23:'PHVA, Lean, Six Sigma y colas en urgencias',m31:'Ishikawa, Pareto y gráfica p',m32:'Antes y después de admisión, auditoría 5S',m33:'Ruta urgencias–hospitalización, takt y PCE',m41:'VPN, TIR y recuperación de un software',m42:'Ruta crítica de un tomógrafo y valor ganado',m43:'DPMO, nivel sigma y Cpk'};
+function home(root){
+  root.innerHTML=`<article class="mod">
+    <section class="hero"><div><div class="mh"><div class="eyebrow">Fundación Universitaria del Área Andina · Ingeniería Biomédica</div></div>
+      <h1>Laboratorio de Gestión de Procesos en Salud</h1>
+      <p>Las 12 subtemáticas del microcurrículo. Cada una trae la teoría, las fórmulas explicadas variable por variable, una herramienta interactiva (tablas editables, matrices, diagramas, gráficas de control, VSM, ruta crítica) y casos y ejercicios con solución.</p>
+      <p>Los casos están pensados para un ingeniero biomédico dentro de un hospital: el departamento de tecnología biomédica, urgencias, laboratorio, farmacia y proyectos de adquisición de equipos.</p>
+      <div class="meta"><span><b>Semestre</b> VII</span><span><b>Créditos</b> 2</span><span><b>Tipo</b> teórico-práctica</span><span><b>Horas</b> 48 directas + 48 autónomas</span><span><b>Metodología</b> estudio de casos, ABP</span></div></div>
+      <div class="plot"><figcaption><b>Del problema a la prioridad</b><span>Pareto de fallas de equipos</span></figcaption><canvas id="hp" style="height:250px" role="img" aria-label="Diagrama de Pareto de ejemplo"></canvas><div class="legend"></div></div></section>
+    <div class="units">${UNITS.map(u=>`<section class="unit"><div class="un">Unidad ${u.n}</div><h2>${u.title}</h2>${u.mods.map(id=>`<a href="#${id}"><span>${MODS[id].code}</span><span>${MODS[id].nav}<small>${BLURB[id]}</small></span></a>`).join('')}</section>`).join('')}
+    <section class="unit" style="grid-column:1/-1"><div class="un">Repaso</div><h2>Formulario completo</h2><a href="#formulario"><span>Σ</span><span>Todas las fórmulas del curso en una sola página<small>Útil antes del parcial</small></span></a></section></div>
+    <section class="calc"><h2>Cómo estudiar con el aplicativo</h2><div class="steps">
+      ${step('1. Lee la teoría y el caso','Cada tema empieza con un caso real de un hospital.')}
+      ${step('2. Revisa las fórmulas','Cada variable está explicada con su unidad.')}
+      ${step('3. Trabaja con la herramienta','Edita las tablas o mueve los parámetros con tus propios datos.')}
+      ${step('4. Sigue el cálculo','El desarrollo aparece paso a paso con tus números.')}
+      ${step('5. Resuelve los casos y ejercicios','Intenta antes de abrir la solución.')}
+    </div></section></article>`;
+  const f=[58,41,27,14,9,7,5,4], tot=f.reduce((a,b)=>a+b,0); let acc=0; const cum=f.map(x=>acc+=x/tot*100);
+  P(root,'hp',{series:[...f.map((x,i)=>({x:[i+1],y:[x/tot*100],bars:true,color:i<3?'s2':'s6'})),{x:f.map((_,i)=>i+1),y:cum,color:'s1',label:'% acumulado'}],xcats:['Accesor.','Uso','Batería','Calibr.','Softw.','Desg.','Líquid.','Otros'],xlim:[0.4,8.6],ylim:[0,105],hlines:[{y:80,color:'s4',label:'80 %'}]});
+}
+function formulario(root){
+  const blk=(t,items)=>`<section class="formulas"><div class="ft">${t}</div>${items.join('')}</section>`;
+  root.innerHTML=`<article class="mod"><header class="mh"><div class="eyebrow">Repaso</div><h1>Formulario de Gestión de Procesos en Salud</h1><p class="lead">Las ecuaciones de las cuatro unidades. Cada bloque enlaza con su herramienta.</p></header><div class="fsheet">
+  ${blk('Unidad 1 · Gestión de calidad',[eq('CTC = C<sub>p</sub> + C<sub>e</sub> + C<sub>fi</sub> + C<sub>fe</sub>'),eq('%CNC = (C<sub>fi</sub> + C<sub>fe</sub>)/CTC·100'),eq('Eficacia = R/M·100'),eq('Eficiencia = (R/R<sub>u</sub>)/(M/R<sub>p</sub>)·100'),eq('Efectividad = (Eficacia + Eficiencia)/2'),eq('Cumplimiento = Σ puntos/(2·n)·100','autodiagnóstico ISO'),'<a href="#m11">Ir a la unidad 1 →</a>'])}
+  ${blk('Unidad 2 · Gerencia estratégica',[eq('MEFI, MEFE = Σ w<sub>i</sub>·c<sub>i</sub>, Σ w<sub>i</sub> = 1'),eq('Técnicos = ⌈H<sub>tot</sub>/H<sub>prod</sub>⌉'),eq('A = λ/μ · ρ = A/c'),eq('W<sub>q</sub> = C(c,A)/(cμ − λ)'),eq('L = λ·W','Little'),'<a href="#m21">Ir a la unidad 2 →</a>'])}
+  ${blk('Unidad 3 · Mejora continua',[eq('%<sub>i</sub> = f<sub>i</sub>/Σf·100','Pareto'),eq('LC = p̄ ± 3√(p̄(1 − p̄)/n)','gráfica p'),eq('Reducción = (T<sub>a</sub> − T<sub>d</sub>)/T<sub>a</sub>·100'),eq('Takt = disponible/demanda'),eq('LT = Σ(TC + espera) · PCE = VA/LT·100'),'<a href="#m31">Ir a la unidad 3 →</a>'])}
+  ${blk('Unidad 4 · Proyectos y Lean Six Sigma',[eq('VPN = −I + Σ FN<sub>t</sub>/(1+i)<sup>t</sup>'),eq('H = LS − ES','holgura'),eq('SPI = EV/PV · CPI = EV/AC · EAC = BAC/CPI'),eq('DPMO = D/(U·O)·10⁶'),eq('σ = Φ⁻¹(1 − DPMO/10⁶) + 1,5'),eq('C<sub>pk</sub> = mín((LSE − μ)/3σ, (μ − LIE)/3σ)'),'<a href="#m41">Ir a la unidad 4 →</a>'])}
+  </div></article>`;
+}
+
+/* =============== navegación =============== */
+const ORDER=['inicio',...UNITS.flatMap(u=>u.mods),'formulario'];
+function buildNav(){
+  $('#side').innerHTML=`<a class="home" href="#inicio" data-id="inicio">Inicio</a>`+UNITS.map(u=>`<h3><i>U${u.n}</i>${u.title}</h3>`+u.mods.map(id=>`<a class="it" href="#${id}" data-id="${id}"><span>${MODS[id].code}</span><span>${MODS[id].nav}</span></a>`).join('')).join('')+`<h3>Repaso</h3><a class="it" href="#formulario" data-id="formulario"><span>Σ</span><span>Formulario completo</span></a>`;
+  const sel=$('#navsel'); sel.innerHTML=`<option value="inicio">Inicio</option>`+UNITS.map(u=>`<optgroup label="Unidad ${u.n}">${u.mods.map(id=>`<option value="${id}">${MODS[id].code} ${MODS[id].nav}</option>`).join('')}</optgroup>`).join('')+`<option value="formulario">Formulario completo</option>`;
+  sel.onchange=()=>{ location.hash=sel.value; };
+}
+function route(){
+  let id=(location.hash||'').slice(1); if(!ORDER.includes(id)) id='inicio';
+  const main=$('#main'); main.innerHTML='';
+  if(id==='inicio') home(main); else if(id==='formulario') formulario(main); else MODS[id].init(main);
+  document.querySelectorAll('.side a').forEach(a=>{ if(a.dataset.id===id) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
+  $('#navsel').value=id; window.scrollTo(0,0);
+}
+buildNav(); window.addEventListener('hashchange',route); route();
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(redrawAll);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1339 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Aplicativo interactivo de estudio de Sensores Aplicados · Ingeniería Biomédica, Areandina">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font-size:14px;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+.navhome{margin-left:auto;font-size:13px;text-decoration:none;color:var(--accent);white-space:nowrap}
+@media (max-width:900px){.navhome{margin-left:8px}}
+</style>
+<title>Laboratorio de Sensores Biomédicos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@85..110,500..800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+/* Layout: barra lateral con las 4 unidades del micro + área de trabajo tipo banco de laboratorio (teoría, simulador, cálculo). Colores de trazas inspirados en el monitor de signos vitales. */
+:root{
+  --bg:#EEF2F2; --surface:#FFFFFF; --surface-2:#F5F7F9; --ink:#15202A; --muted:#566778; --line:#D3DCE4;
+  --accent:#0B746F; --accent-ink:#FFFFFF; --accent-soft:#DDEFED;
+  --plot-bg:#FBFCFD; --grid:#E4EAF0; --axis:#8796A5; --band:rgba(33,135,90,.12); --shade:rgba(176,36,62,.08);
+  --s1:#1170B5; --s2:#C8362B; --s3:#1F8656; --s4:#B07408; --s5:#6C45B3; --s6:#7A8896;
+  --ok:#1E7D4F; --warn:#9A6200; --bad:#B0243E;
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --f-math:"STIX Two Text","Cambria Math","Times New Roman",serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1016; --surface:#111920; --surface-2:#16212B; --ink:#E3EAF0; --muted:#92A3B3; --line:#24313D;
+  --accent:#3CC4B9; --accent-ink:#04211F; --accent-soft:#0F2E2C;
+  --plot-bg:#091016; --grid:#1A2630; --axis:#5D6F80; --band:rgba(69,211,138,.13); --shade:rgba(240,106,130,.10);
+  --s1:#4DB2F4; --s2:#FF6C5C; --s3:#46D28A; --s4:#F1B23C; --s5:#B28EFF; --s6:#8D9EAE;
+  --ok:#46D28A; --warn:#F1B23C; --bad:#F06A82; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1016; --surface:#111920; --surface-2:#16212B; --ink:#E3EAF0; --muted:#92A3B3; --line:#24313D;
+  --accent:#3CC4B9; --accent-ink:#04211F; --accent-soft:#0F2E2C;
+  --plot-bg:#091016; --grid:#1A2630; --axis:#5D6F80; --band:rgba(69,211,138,.13); --shade:rgba(240,106,130,.10);
+  --s1:#4DB2F4; --s2:#FF6C5C; --s3:#46D28A; --s4:#F1B23C; --s5:#B28EFF; --s6:#8D9EAE;
+  --ok:#46D28A; --warn:#F1B23C; --bad:#F06A82; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--f-body);font-size:15px;line-height:1.55}
+a{color:var(--accent)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:14px;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:0;text-decoration:none;color:inherit}
+.brand b{font-family:var(--f-display);font-stretch:92%;font-weight:750;font-size:18px;letter-spacing:-.01em;white-space:nowrap}
+.brand span{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trace{width:64px;height:22px;flex:none;color:var(--accent)}
+.navsel{display:none;margin-left:auto;max-width:56vw;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--ink);font-size:13px}
+
+.app{display:grid;grid-template-columns:272px minmax(0,1fr);min-height:calc(100% - 50px)}
+.side{border-right:1px solid var(--line);background:var(--surface);padding:18px 12px 40px 16px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 49px);height:calc(100vh - 49px);overflow:auto}
+.side .home{display:block;padding:7px 10px;border-radius:6px;text-decoration:none;color:var(--ink);font-weight:600;margin-bottom:6px}
+.side h3{font-family:var(--f-display);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:18px 10px 6px;font-weight:650;line-height:1.35}
+.side h3 i{font-style:normal;color:var(--accent);margin-right:4px}
+.side a.it{display:flex;gap:8px;padding:6px 10px;border-radius:6px;text-decoration:none;color:var(--ink);font-size:13.5px;line-height:1.35}
+.side a.it span:first-child{font-family:var(--f-mono);font-size:12px;color:var(--muted);flex:none;padding-top:1px}
+.side a:hover{background:var(--surface-2)}
+.side a[aria-current="page"]{background:var(--accent-soft);color:var(--ink)}
+.side a[aria-current="page"] span:first-child{color:var(--accent)}
+
+main{min-width:0;padding-block:26px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.mod{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.mh .eyebrow{font-family:var(--f-mono);font-size:12px;color:var(--accent);letter-spacing:.04em}
+.mh h1{font-family:var(--f-display);font-weight:780;font-stretch:90%;font-size:clamp(26px,3.4vw,38px);line-height:1.08;margin:4px 0 8px;letter-spacing:-.015em;text-wrap:balance}
+.mh .lead{max-width:72ch;color:var(--muted);margin:0;font-size:16px}
+h2{font-family:var(--f-display);font-weight:700;font-stretch:95%;font-size:19px;margin:0 0 10px;letter-spacing:-.005em}
+h4{font-size:14px;margin:14px 0 4px}
+.case{display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:4px 8px 8px 4px;padding:12px 16px;max-width:900px}
+.case b{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);flex:none;padding-top:2px}
+.case p{margin:0}
+
+.theory{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:22px;align-items:start}
+.theory .txt p{margin:0 0 10px;max-width:68ch}
+.theory .txt ul{margin:0 0 10px;padding-left:20px}
+.formulas{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.formulas .ft{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.eq{font-family:var(--f-math);font-size:18px;line-height:1.7;overflow-x:auto;white-space:nowrap;padding:2px 0}
+.eq small{font-family:var(--f-body);font-size:12.5px;color:var(--muted);margin-left:10px;white-space:normal}
+.eqd{font-size:12.5px;color:var(--muted);margin-top:-6px;font-family:var(--f-body)}
+.m{font-family:var(--f-math);font-style:italic;font-size:1.08em}
+.fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 3px;line-height:1.25}
+.fr>span:first-child{border-bottom:1.2px solid currentColor;padding:0 4px 1px}
+.fr>span:last-child{padding:1px 4px 0}
+.sq{border-top:1.2px solid currentColor;padding:0 2px;margin-left:1px}
+.mat{display:inline-flex;vertical-align:middle;border-left:1.5px solid currentColor;border-right:1.5px solid currentColor;border-radius:5px;padding:1px 4px;margin:0 3px}
+.mat .mb{display:table}.mat .mr{display:table-row}.mat .mr>span{display:table-cell;padding:1px 7px;text-align:center;font-variant-numeric:tabular-nums}
+
+.lab{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+.lab .lt{grid-column:1/-1;display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:-4px}
+.lab .lt h2{margin:0}
+.lab .lt span{font-size:12.5px;color:var(--muted)}
+.ctl{display:flex;flex-direction:column;gap:14px;position:sticky;top:70px}
+.crow .clab{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-bottom:4px;align-items:baseline}
+.crow .clab label{color:var(--ink)}
+.crow output{font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--accent)}
+.crow output .u{color:var(--muted);font-size:11.5px}
+input[type=range]{width:100%;accent-color:var(--accent);margin:0}
+.seg{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--surface-2)}
+.seg button{flex:1 1 auto;border:0;background:transparent;padding:7px 10px;font-size:12.5px;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-checked="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+.btn{border:1px solid var(--line);background:var(--surface-2);border-radius:6px;padding:6px 10px;font-size:12.5px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.chk{display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer}
+.chk input{accent-color:var(--accent);width:16px;height:16px}
+.crow.num{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px}
+.crow.num input{width:110px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--ink);font-family:var(--f-mono)}
+.plots{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;min-width:0}
+.plots.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.plot{margin:0;min-width:0}
+.plot figcaption{font-size:12.5px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.plot figcaption b{color:var(--ink);font-weight:600}
+.plot canvas{display:block;width:100%;height:280px;border-radius:6px}
+.plot.short canvas{height:210px}
+.plot.tall canvas{height:320px}
+.plots .kpis,.plots .tbl{grid-column:1/-1}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:16px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.legend i.pt{width:8px;height:8px;border-radius:50%}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.kpi{background:var(--surface-2);border:1px solid var(--line);border-radius:7px;padding:8px 10px}
+.kpi .k{font-size:11.5px;color:var(--muted);line-height:1.3}
+.kpi .v{font-family:var(--f-mono);font-size:17px;font-variant-numeric:tabular-nums;margin-top:2px}
+.pill{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:999px;border:1px solid currentColor;letter-spacing:.02em}
+.pill.ok{color:var(--ok)}.pill.warn{color:var(--warn)}.pill.bad{color:var(--bad)}
+
+.calc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:10px 26px}
+.step{padding:8px 0;border-bottom:1px dashed var(--line);min-width:0}
+.step .sl{font-size:12.5px;color:var(--muted)}
+.step .se{font-family:var(--f-math);font-size:17px;overflow-x:auto;white-space:nowrap;line-height:1.75}
+.step .se b{font-family:var(--f-mono);font-weight:500;font-size:14.5px;color:var(--accent)}
+.note{font-size:13.5px;color:var(--muted);margin:12px 0 0;max-width:80ch}
+.note.alert{color:var(--bad)}
+
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;font-size:13.5px;min-width:100%}
+th,td{border-bottom:1px solid var(--line);padding:6px 10px;text-align:left;font-variant-numeric:tabular-nums}
+th{font-weight:600;color:var(--muted);font-size:12px;letter-spacing:.03em}
+td.mono{font-family:var(--f-mono);font-size:13px}
+.routh td{font-family:var(--f-mono);text-align:right}
+.routh td:first-child{text-align:left;color:var(--muted)}
+.routh td.fc{font-weight:600}
+.routh td.neg{color:var(--bad)}
+
+.practice details{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-bottom:8px}
+.practice summary{cursor:pointer;font-weight:500}
+.practice details p{margin:8px 0 2px;color:var(--muted)}
+
+.diagram{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px}
+.diagram svg{display:block;min-width:640px;width:100%;height:auto}
+
+/* inicio */
+.hero{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:26px;align-items:center}
+.hero h1{font-family:var(--f-display);font-weight:800;font-stretch:88%;font-size:clamp(32px,4.6vw,54px);line-height:1;margin:6px 0 12px;letter-spacing:-.02em;text-wrap:balance}
+.hero p{color:var(--muted);max-width:60ch;margin:0 0 8px;font-size:16px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--muted);margin-top:12px}
+.meta b{color:var(--ink);font-weight:600}
+.units{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.unit{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.unit .un{font-family:var(--f-mono);font-size:12px;color:var(--accent)}
+.unit h2{margin:4px 0 10px}
+.unit a{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--line);text-decoration:none;color:var(--ink);font-size:14px}
+.unit a span:first-child{font-family:var(--f-mono);color:var(--muted);font-size:12.5px;flex:none;padding-top:1px}
+.unit a:hover span:last-child{color:var(--accent)}
+.unit a small{display:block;color:var(--muted);font-size:12.5px}
+.fsheet{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+
+@media (max-width:1020px){
+  .theory{grid-template-columns:minmax(0,1fr)}
+  .lab{grid-template-columns:minmax(0,1fr)}
+  .ctl{position:static}
+  .hero{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{display:none}
+  .navsel{display:block}
+  .brand span{display:none}
+  .units,.fsheet{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:640px){
+  .plots.two{grid-template-columns:minmax(0,1fr)}
+  .plot canvas{height:240px}
+  .lab{padding:12px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.expl{display:flex;flex-direction:column;gap:4px}
+.egrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:12px}
+.ecard{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0}
+.ecard .en{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent)}
+.ecard .eq{font-size:17px;white-space:normal}
+.ecard p{margin:2px 0 8px;font-size:13.5px;color:var(--muted)}
+.vt{min-width:0;width:100%;font-size:13px}
+.vt td{padding:4px 6px;vertical-align:top}
+.vt td.sym{font-family:var(--f-math);font-style:italic;font-size:15px;white-space:nowrap;color:var(--ink);width:1%}
+.vt td.un{font-family:var(--f-mono);font-size:12px;color:var(--muted);white-space:nowrap;text-align:right;width:1%}
+</style>
+
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="#inicio">
+    <svg class="trace" viewBox="0 0 64 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 15c6 0 6-9 12-9s6 9 12 9 6-9 12-9 6 9 12 9 6-4 12-4"/></svg>
+    <b>Sensores Aplicados</b><span>Ingeniería Biomédica · VII semestre</span>
+  </a>
+  <a class="navhome" href="index.html">← Materias</a>
+  <select id="navsel" class="navsel" aria-label="Ir a un tema"></select>
+</header>
+<div class="app">
+  <nav class="side" id="side" aria-label="Temas del microcurrículo de Sensores"></nav>
+  <main id="main"></main>
+</div>
+
+<script>
+"use strict";
+/* =============== utilidades numéricas =============== */
+const $=(s,r=document)=>r.querySelector(s);
+const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+const PI=Math.PI;
+function fmt(x,d=2){
+  if(x===undefined||x===null||Number.isNaN(x)) return '—';
+  if(!isFinite(x)) return x>0?'∞':'−∞';
+  const a=Math.abs(x);
+  if(a<1e-12) return '0';
+  if(a!==0&&(a>=1e6||a<Math.pow(10,-d)/2)) return sci(x,2);
+  return x.toLocaleString('es-CO',{minimumFractionDigits:0,maximumFractionDigits:d}).replace('-','−');
+}
+function sci(x,d=2){
+  if(x===0) return '0';
+  const e=Math.floor(Math.log10(Math.abs(x))); const m=x/Math.pow(10,e);
+  return `${m.toLocaleString('es-CO',{maximumFractionDigits:d}).replace('-','−')}×10<sup>${e}</sup>`;
+}
+function fsig(x,s=3){ if(!isFinite(x)||x===0) return fmt(x); const d=Math.max(0,s-1-Math.floor(Math.log10(Math.abs(x)))); return fmt(x,Math.min(d,6)); }
+const fr=(a,b)=>`<span class="fr"><span>${a}</span><span>${b}</span></span>`;
+const sq=x=>`√<span class="sq">${x}</span>`;
+const mat=rows=>`<span class="mat"><span class="mb">${rows.map(r=>`<span class="mr">${r.map(c=>`<span>${c}</span>`).join('')}</span>`).join('')}</span></span>`;
+const B=x=>`<b>${x}</b>`;
+
+const Cx=(re,im=0)=>({re,im});
+const cadd=(a,b)=>Cx(a.re+b.re,a.im+b.im), csub=(a,b)=>Cx(a.re-b.re,a.im-b.im);
+const cmul=(a,b)=>Cx(a.re*b.re-a.im*b.im,a.re*b.im+a.im*b.re);
+const cdiv=(a,b)=>{const d=b.re*b.re+b.im*b.im; return Cx((a.re*b.re+a.im*b.im)/d,(a.im*b.re-a.re*b.im)/d);};
+const cabs=a=>Math.hypot(a.re,a.im);
+function cfmt(z,d=2){ if(Math.abs(z.im)<1e-9) return fmt(z.re,d); return `${fmt(z.re,d)} ${z.im>=0?'+':'−'} j${fmt(Math.abs(z.im),d)}`; }
+function polesTxt(rs,d=2){ const out=[]; rs.forEach(z=>{ if(Math.abs(z.im)<1e-9) out.push(fmt(z.re,d)); else if(z.im>0) out.push(`${fmt(z.re,d)} ± j${fmt(z.im,d)}`); }); return out.join(' ; '); }
+
+function polyval(p,s){ let r=Cx(0); for(const c of p) r=cadd(cmul(r,s),Cx(c)); return r; }
+const polyvalR=(p,x)=>p.reduce((r,c)=>r*x+c,0);
+function polymul(a,b){ const r=new Array(a.length+b.length-1).fill(0); a.forEach((x,i)=>b.forEach((y,j)=>r[i+j]+=x*y)); return r; }
+function polyadd(a,b){ const n=Math.max(a.length,b.length); const r=new Array(n).fill(0); a.forEach((x,i)=>r[n-a.length+i]+=x); b.forEach((x,i)=>r[n-b.length+i]+=x); return r; }
+const polyscale=(a,k)=>a.map(x=>x*k);
+const polyder=p=>p.slice(0,-1).map((c,i)=>c*(p.length-1-i));
+function polyRoots(p0){
+  let p=p0.slice(); while(p.length>1&&Math.abs(p[0])<1e-14) p.shift();
+  const roots=[]; while(p.length>1&&Math.abs(p[p.length-1])<1e-14){ p.pop(); roots.push(Cx(0)); }
+  const n=p.length-1; if(n<1) return roots;
+  const a=p.map(v=>v/p[0]);
+  if(n===1){ roots.push(Cx(-a[1])); return roots; }
+  if(n===2){ const d=a[1]*a[1]-4*a[2]; if(d>=0){const s=Math.sqrt(d); roots.push(Cx((-a[1]+s)/2),Cx((-a[1]-s)/2));} else {const s=Math.sqrt(-d)/2; roots.push(Cx(-a[1]/2,s),Cx(-a[1]/2,-s));} return roots; }
+  let R=0; for(let i=1;i<=n;i++) R=Math.max(R,Math.pow(Math.abs(a[i]),1/i)); R=Math.max(2*R,1e-6);
+  let z=[]; for(let k=0;k<n;k++) z.push(Cx(R*Math.cos(2*PI*k/n+0.4),R*Math.sin(2*PI*k/n+0.4)));
+  for(let it=0;it<1000;it++){
+    let md=0;
+    for(let i=0;i<n;i++){ let den=Cx(1); for(let j=0;j<n;j++) if(j!==i) den=cmul(den,csub(z[i],z[j]));
+      const dz=cdiv(polyval(a,z[i]),den); if(!isFinite(dz.re)||!isFinite(dz.im)) continue; z[i]=csub(z[i],dz); md=Math.max(md,cabs(dz)); }
+    if(md<1e-13*R) break;
+  }
+  z.forEach(r=>{ if(Math.abs(r.im)<1e-7*Math.max(1,Math.abs(r.re))) r.im=0; roots.push(r); });
+  return roots;
+}
+
+/* función de transferencia -> espacio de estados (forma canónica controlable) */
+function tf2ss(num,den){
+  den=den.slice(); while(Math.abs(den[0])<1e-15) den.shift();
+  const n=den.length-1, a0=den[0]; const a=den.map(v=>v/a0);
+  let b=num.map(v=>v/a0); while(b.length<n+1) b.unshift(0);
+  const D=b[0]; const A=[]; for(let i=0;i<n;i++){ A.push(new Array(n).fill(0)); if(i<n-1) A[i][i+1]=1; }
+  for(let j=0;j<n;j++) A[n-1][j]=-a[n-j];
+  const Bv=new Array(n).fill(0); Bv[n-1]=1;
+  const Cv=[]; for(let j=0;j<n;j++) Cv.push(b[n-j]-a[n-j]*D);
+  return {A,B:Bv,C:Cv,D,n};
+}
+function deriv(ss,x,u){ const n=ss.n, dx=new Array(n); for(let i=0;i<n;i++){ let s=ss.B[i]*u; const r=ss.A[i]; for(let j=0;j<n;j++) s+=r[j]*x[j]; dx[i]=s; } return dx; }
+function rk4(ss,x,u,dt){ const n=ss.n; const k1=deriv(ss,x,u);
+  const x2=x.map((v,i)=>v+dt/2*k1[i]), k2=deriv(ss,x2,u);
+  const x3=x.map((v,i)=>v+dt/2*k2[i]), k3=deriv(ss,x3,u);
+  const x4=x.map((v,i)=>v+dt*k3[i]), k4=deriv(ss,x4,u);
+  return x.map((v,i)=>v+dt/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i])); }
+const outp=(ss,x,u)=>ss.C.reduce((s,c,i)=>s+c*x[i],0)+ss.D*u;
+function simTF(num,den,uf,T,N=2500,x0){
+  const ss=tf2ss(num,den); const dt=T/N; let x=x0?x0.slice():new Array(ss.n).fill(0);
+  const t=[],y=[];
+  for(let i=0;i<=N;i++){ const ti=i*dt, u=uf(ti); t.push(ti); y.push(outp(ss,x,u)); if(ss.n) x=rk4(ss,x,uf(ti+dt/2),dt); }
+  return {t,y};
+}
+function stepInfo(t,y,yf,y0=0){
+  const n=y.length; if(yf===undefined) yf=y[n-1];
+  const amp=yf-y0; let pk=-Infinity,tp=NaN;
+  for(let i=0;i<n;i++){ const v=(y[i]-y0)*Math.sign(amp||1); if(v>pk){pk=v;tp=t[i];} }
+  const Mp=Math.abs(amp)>1e-12&&pk>Math.abs(amp)?(pk-Math.abs(amp))/Math.abs(amp)*100:0;
+  let t10=NaN,t90=NaN; for(let i=0;i<n;i++){ const v=(y[i]-y0)/(amp||1); if(isNaN(t10)&&v>=0.1) t10=t[i]; if(v>=0.9){t90=t[i];break;} }
+  let ts=0; const tol=0.02*Math.abs(amp);
+  for(let i=n-1;i>=0;i--){ if(Math.abs(y[i]-yf)>tol){ ts=i<n-1?t[i+1]:NaN; break; } }
+  return {Mp,tp:Mp>0.05?tp:NaN,tr:t90-t10,ts};
+}
+function lcg(seed){ let s=seed>>>0; return ()=>{ s=(1664525*s+1013904223)>>>0; return s/4294967296; }; }
+
+/* =============== gráficas en canvas =============== */
+const CSS=n=>getComputedStyle(document.documentElement).getPropertyValue('--'+n).trim();
+const colr=c=>!c?CSS('s1'):(c[0]==='#'||c.startsWith('rgb'))?c:CSS(c)||c;
+function niceStep(range,n){ const raw=range/n; const p=Math.pow(10,Math.floor(Math.log10(raw))); const r=raw/p; return (r<1.5?1:r<3?2:r<7?5:10)*p; }
+function ticks(a,b,n){ const st=niceStep(b-a,n); const out=[]; for(let v=Math.ceil(a/st-1e-9)*st; v<=b+st*1e-9; v+=st) out.push(Math.abs(v)<st*1e-9?0:+v.toPrecision(12)); return out; }
+function tickLab(v,log){ if(log){ if(v>=0.01&&v<=10000) return fmt(v,2); return '10^'+Math.round(Math.log10(v)); } const a=Math.abs(v); if(a!==0&&(a>=1e5||a<1e-3)) return v.toExponential(0).replace('-','−'); return fmt(v,4); }
+function drawPlot(cv,o){
+  cv._o=o; const W=cv.clientWidth,H=cv.clientHeight; if(!W||!H) return;
+  const dpr=Math.min(window.devicePixelRatio||1,2.5); cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
+  const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,W,H);
+  const ml=o.ylabel?60:48, mr=12, mt=10, mb=o.xlabel?40:24; const pw=W-ml-mr, ph=H-mt-mb;
+  const lx=o.xlog?(v=>Math.log10(v)):(v=>v);
+  let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
+  const take=(xs,ys)=>{ for(let i=0;i<xs.length;i++){ const X=xs[i],Y=ys[i]; if(!isFinite(X)||!isFinite(Y)||(o.xlog&&X<=0)) continue; if(o.yclip&&(Y<o.yclip[0]||Y>o.yclip[1])) continue; if(o.xclip&&(X<o.xclip[0]||X>o.xclip[1])) continue; const L=lx(X); if(L<x0)x0=L; if(L>x1)x1=L; if(Y<y0)y0=Y; if(Y>y1)y1=Y; } };
+  (o.series||[]).forEach(s=>take(s.x,s.y)); (o.points||[]).forEach(p=>take([p.x],[p.y]));
+  if(!o.ylim)(o.hlines||[]).forEach(h=>{ if(h.y<y0)y0=h.y; if(h.y>y1)y1=h.y; });
+  if(o.xlim){x0=lx(o.xlim[0]);x1=lx(o.xlim[1]);}
+  if(!isFinite(x0)){x0=0;x1=1;} if(x1-x0<1e-12){x0-=1;x1+=1;}
+  if(o.ylim){y0=o.ylim[0];y1=o.ylim[1];}
+  else{ if(!isFinite(y0)){y0=-1;y1=1;} if(o.yzero){y0=Math.min(y0,0);y1=Math.max(y1,0);} if(y1-y0<1e-12){y0-=1;y1+=1;} const pad=(y1-y0)*0.08; y0-=pad; y1+=pad; }
+  if(o.equal){ if(!o.xlim){const p=(x1-x0)*0.08; x0-=p; x1+=p;} const sx=(x1-x0)/pw, sy=(y1-y0)/ph; if(sx>sy){const c=(y0+y1)/2,h=sx*ph/2; y0=c-h; y1=c+h;} else {const c=(x0+x1)/2,h=sy*pw/2; x0=c-h; x1=c+h;} }
+  const X=v=>ml+(lx(v)-x0)/(x1-x0)*pw, Y=v=>mt+(y1-v)/(y1-y0)*ph;
+  const fm=CSS('f-mono')||'monospace';
+  g.fillStyle=CSS('plot-bg'); g.fillRect(ml,mt,pw,ph);
+  g.font=`11px ${fm}`; g.lineWidth=1; g.strokeStyle=CSS('grid'); g.fillStyle=CSS('muted');
+  let xt=[];
+  if(o.xlog){ for(let e=Math.floor(x0);e<=Math.ceil(x1);e++) for(const m of [1,2,5]){ const v=m*Math.pow(10,e), L=Math.log10(v); if(L>=x0-1e-9&&L<=x1+1e-9) xt.push({v,maj:m===1}); } }
+  else xt=ticks(x0,x1,Math.max(3,Math.floor(pw/85))).map(v=>({v,maj:true}));
+  g.textAlign='center'; g.textBaseline='top';
+  xt.forEach(t=>{ const px=Math.round(X(t.v))+.5; g.beginPath(); g.moveTo(px,mt); g.lineTo(px,mt+ph); g.stroke(); if(t.maj) g.fillText(tickLab(t.v,o.xlog),px,mt+ph+5); });
+  g.textAlign='right'; g.textBaseline='middle';
+  ticks(y0,y1,Math.max(3,Math.floor(ph/42))).forEach(v=>{ const py=Math.round(Y(v))+.5; g.beginPath(); g.moveTo(ml,py); g.lineTo(ml+pw,py); g.stroke(); g.fillText(tickLab(v),ml-6,py); });
+  g.save(); g.beginPath(); g.rect(ml,mt,pw,ph); g.clip();
+  if(o.under) o.under(g,X,Y,{ml,mt,pw,ph,x0,x1,y0,y1});
+  (o.bands||[]).forEach(b=>{ g.fillStyle=colr(b.color||'band'); const a=Y(b.y1),c=Y(b.y0); g.fillRect(ml,a,pw,c-a); });
+  g.strokeStyle=CSS('axis'); g.lineWidth=1;
+  if(o.axes0){ if(0>=y0&&0<=y1){ g.beginPath(); g.moveTo(ml,Math.round(Y(0))+.5); g.lineTo(ml+pw,Math.round(Y(0))+.5); g.stroke(); } if(!o.xlog&&0>=x0&&0<=x1){ g.beginPath(); g.moveTo(Math.round(X(0))+.5,mt); g.lineTo(Math.round(X(0))+.5,mt+ph); g.stroke(); } }
+  const lineAt=(isH,v,c,dash,lab)=>{ g.strokeStyle=colr(c||'s6'); g.setLineDash(dash||[5,4]); g.lineWidth=1.2; g.beginPath(); if(isH){const py=Y(v); g.moveTo(ml,py); g.lineTo(ml+pw,py);} else {const px=X(v); g.moveTo(px,mt); g.lineTo(px,mt+ph);} g.stroke(); g.setLineDash([]);
+    if(lab){ g.fillStyle=colr(c||'s6'); g.font=`11px ${fm}`; if(isH){ g.textAlign='right'; g.textBaseline='bottom'; g.fillText(lab,ml+pw-4,Y(v)-2);} else { g.textAlign='left'; g.textBaseline='top'; g.fillText(lab,X(v)+4,mt+4);} } };
+  (o.hlines||[]).forEach(h=>lineAt(true,h.y,h.color,h.dash,h.label)); (o.vlines||[]).forEach(h=>lineAt(false,h.x,h.color,h.dash,h.label));
+  (o.series||[]).forEach(s=>{
+    const c=colr(s.color); g.strokeStyle=c; g.fillStyle=c; g.lineWidth=s.width||2; g.setLineDash(s.dash||[]);
+    if(s.dots){ const r=s.r||1.6; for(let i=0;i<s.x.length;i++){ const xv=s.x[i],yv=s.y[i]; if(!isFinite(xv)||!isFinite(yv)) continue; g.beginPath(); g.arc(X(xv),Y(yv),r,0,2*PI); g.fill(); } }
+    else{ g.beginPath(); let pen=false; const lim=(y1-y0)*50;
+      for(let i=0;i<s.x.length;i++){ const xv=s.x[i],yv=s.y[i]; if(!isFinite(xv)||!isFinite(yv)||(o.xlog&&xv<=0)||yv>y1+lim||yv<y0-lim){pen=false;continue;} const px=X(xv),py=Y(yv); if(pen) g.lineTo(px,py); else {g.moveTo(px,py);pen=true;} }
+      g.stroke(); }
+    g.setLineDash([]);
+  });
+  (o.points||[]).forEach(p=>{ const c=colr(p.color||'s2'); const px=X(p.x),py=Y(p.y),r=p.size||5; g.strokeStyle=c; g.fillStyle=c; g.lineWidth=2;
+    if(p.shape==='x'){ g.beginPath(); g.moveTo(px-r,py-r); g.lineTo(px+r,py+r); g.moveTo(px+r,py-r); g.lineTo(px-r,py+r); g.stroke(); }
+    else if(p.shape==='o'){ g.beginPath(); g.arc(px,py,r,0,2*PI); g.stroke(); }
+    else if(p.shape==='ring'){ g.beginPath(); g.arc(px,py,r,0,2*PI); g.fillStyle=CSS('plot-bg'); g.fill(); g.stroke(); }
+    else { g.beginPath(); g.arc(px,py,r,0,2*PI); g.fill(); }
+    if(p.text){ g.font=`11px ${fm}`; g.textAlign='left'; g.textBaseline='bottom'; g.fillStyle=c; g.fillText(p.text,px+r+3,py-3); } });
+  g.restore();
+  g.strokeStyle=CSS('line'); g.lineWidth=1; g.strokeRect(ml+.5,mt+.5,pw-1,ph-1);
+  g.fillStyle=CSS('muted'); g.font=`12px ${CSS('f-body')}`;
+  if(o.xlabel){ g.textAlign='center'; g.textBaseline='bottom'; g.fillText(o.xlabel,ml+pw/2,H-2); }
+  if(o.ylabel){ g.save(); g.translate(12,mt+ph/2); g.rotate(-PI/2); g.textAlign='center'; g.textBaseline='middle'; g.fillText(o.ylabel,0,0); g.restore(); }
+  const lg=cv.parentElement.querySelector('.legend');
+  if(lg){ const items=[]; (o.series||[]).forEach(s=>{ if(s.label) items.push(`<span><i style="background:${colr(s.color)}${s.dash?';opacity:.65':''}"></i>${s.label}</span>`); }); (o.legend||[]).forEach(l=>items.push(`<span><i class="pt" style="background:${colr(l.color)}"></i>${l.label}</span>`)); lg.innerHTML=items.join(''); }
+}
+const RO=new ResizeObserver(es=>es.forEach(e=>{ if(e.target._o) drawPlot(e.target,e.target._o); }));
+function redrawAll(){ document.querySelectorAll('canvas').forEach(c=>{ if(c._o) drawPlot(c,c._o); }); }
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',redrawAll);
+new MutationObserver(redrawAll).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+const P=(root,id,o)=>{ const cv=root.querySelector('#'+id); if(!cv) return; if(!cv._ro){ RO.observe(cv); cv._ro=1; } drawPlot(cv,o); };
+/* sombreado del semiplano derecho en el plano s */
+const rhpShade=(g,X,Y,b)=>{ const x0=X(0); if(x0<b.ml+b.pw){ g.fillStyle=CSS('shade'); g.fillRect(Math.max(x0,b.ml),b.mt,b.ml+b.pw-Math.max(x0,b.ml),b.ph); } };
+
+/* =============== controles =============== */
+function makeControls(host,pre,defs,onChange){
+  const v={};
+  const api={v,set(id,val){ const d=defs.find(x=>x.id===id); if(d&&d._set) d._set(val); },fire};
+  defs.forEach(d=>{
+    const row=document.createElement('div'); row.className='crow'; d._row=row; const id=`${pre}-${d.id}`;
+    if(d.type==='seg'){
+      v[d.id]=d.value;
+      row.innerHTML=`<div class="clab"><span>${d.label}</span></div><div class="seg" role="radiogroup" aria-label="${d.label.replace(/<[^>]+>/g,'')}">${d.options.map(([val,txt])=>`<button type="button" role="radio" id="${id}-${val}" data-v="${val}" aria-checked="${val===d.value}">${txt}</button>`).join('')}</div>`;
+      const bs=row.querySelectorAll('button'); bs.forEach(b=>b.onclick=()=>{ v[d.id]=b.dataset.v; bs.forEach(x=>x.setAttribute('aria-checked',String(x===b))); fire(); });
+      d._set=val=>{ v[d.id]=val; bs.forEach(x=>x.setAttribute('aria-checked',String(x.dataset.v===val))); };
+    } else if(d.type==='check'){
+      v[d.id]=!!d.value; row.innerHTML=`<label class="chk"><input type="checkbox" id="${id}" ${d.value?'checked':''}> ${d.label}</label>`;
+      const inp=row.querySelector('input'); inp.onchange=()=>{ v[d.id]=inp.checked; fire(); }; d._set=val=>{ v[d.id]=!!val; inp.checked=!!val; };
+    } else if(d.type==='num'){
+      v[d.id]=d.value; row.className='crow num'; row.innerHTML=`<label for="${id}">${d.label}</label><input type="number" id="${id}" value="${d.value}" step="${d.step||'any'}">`;
+      const inp=row.querySelector('input'); inp.oninput=()=>{ const x=parseFloat(inp.value); v[d.id]=isFinite(x)?x:0; fire(); }; d._set=val=>{ v[d.id]=val; inp.value=val; };
+    } else if(d.type==='buttons'){
+      row.innerHTML=`<div class="clab"><span>${d.label}</span></div><div class="btns">${d.items.map((it,i)=>`<button type="button" class="btn" id="${id}-${i}" data-i="${i}">${it[0]}</button>`).join('')}</div>`;
+      row.querySelectorAll('button').forEach(b=>b.onclick=()=>{ d.items[+b.dataset.i][1](api); fire(); });
+    } else {
+      const toPos=x=>d.log?Math.round(1000*Math.log(x/d.min)/Math.log(d.max/d.min)):x;
+      const fromPos=p=>d.log?+fsigNum(d.min*Math.pow(d.max/d.min,p/1000)):+p;
+      v[d.id]=d.value;
+      row.innerHTML=`<div class="clab"><label for="${id}">${d.label}</label><output for="${id}"></output></div><input type="range" id="${id}" min="${d.log?0:d.min}" max="${d.log?1000:d.max}" step="${d.log?1:d.step}" value="${toPos(d.value)}">`;
+      const inp=row.querySelector('input'), out=row.querySelector('output');
+      const show=()=>{ out.innerHTML=(d.log?fsig(v[d.id],3):fmt(v[d.id],d.dec??2))+(d.unit?` <span class="u">${d.unit}</span>`:''); };
+      inp.oninput=()=>{ v[d.id]=fromPos(inp.value); show(); fire(); };
+      d._set=val=>{ v[d.id]=val; inp.value=toPos(val); show(); }; show();
+    }
+    host.appendChild(row);
+  });
+  function vis(){ defs.forEach(d=>{ if(d.showIf) d._row.hidden=!d.showIf(v); }); }
+  function fire(){ vis(); onChange(v); }
+  vis(); return api;
+}
+function fsigNum(x){ if(x===0) return 0; const e=Math.floor(Math.log10(Math.abs(x))); const f=Math.pow(10,e-2); return Math.round(x/f)*f; }
+
+/* =============== explicación de fórmulas =============== */
+const E=(n,f,d,v)=>({n,f,d,v});
+const EXPL={
+m11:[
+ E('Voltaje a la entrada del ADC','V = S·G·T','El sensor convierte temperatura en voltaje y el amplificador lo multiplica.',[['V','voltaje que llega al ADC','V'],['S','sensibilidad del LM35: 10 mV por grado','V/°C'],['G','ganancia del amplificador','adimensional'],['T','temperatura medida','°C']]),
+ E('Tamaño del LSB','LSB = V<sub>ref</sub>/2<sup>n</sup>','El menor cambio de voltaje que el ADC distingue: un paso de la escalera.',[['LSB','bit menos significativo, en voltios','V'],['V<sub>ref</sub>','voltaje de referencia (máximo que lee el ADC)','V'],['n','número de bits del ADC','—'],['2<sup>n</sup>','número de niveles posibles','—']]),
+ E('Resolución en temperatura','Resolución = LSB/(S·G)','El LSB pasado a grados: el menor cambio de temperatura que el termómetro detecta.',[['Resolución','cambio mínimo detectable','°C'],['S·G','sensibilidad total de la cadena','V/°C']]),
+ E('Rango','T<sub>máx</sub> = V<sub>ref</sub>/(S·G)','Temperatura en que el ADC llega a su máximo y satura.',[['T<sub>máx</sub>','temperatura máxima medible','°C']]),
+ E('Exactitud y precisión','Exactitud = |x̄ − x<sub>real</sub>| · Precisión = σ','La exactitud mide el sesgo del promedio; la precisión mide la dispersión de lecturas repetidas.',[['x̄','promedio de las lecturas','°C'],['x<sub>real</sub>','valor verdadero (patrón)','°C'],['σ','desviación estándar de las lecturas','°C']])],
+m12:[
+ E('RTD Pt100','R(T) = R<sub>0</sub>(1 + αT)','El platino aumenta su resistencia casi en línea recta con la temperatura.',[['R(T)','resistencia a la temperatura T','Ω'],['R<sub>0</sub>','resistencia a 0 °C (100 Ω)','Ω'],['α','coeficiente de temperatura, 0,00385','1/°C'],['T','temperatura','°C']]),
+ E('Termistor NTC (modelo β)','R(T) = R<sub>25</sub>·e<sup>β(1/T − 1/298,15)</sup>','La resistencia baja de forma exponencial al calentarse.',[['R<sub>25</sub>','resistencia a 25 °C','Ω'],['β','constante del material','K'],['T','temperatura absoluta: °C + 273,15','K'],['298,15','25 °C en kelvin','K']]),
+ E('Sensibilidad relativa del NTC','α<sub>NTC</sub> = −β/T²','Porcentaje que cambia la resistencia por cada grado. Es negativa: sube T, baja R.',[['α<sub>NTC</sub>','coeficiente de temperatura','1/K (×100 = %/°C)']]),
+ E('Termopar','V = S<sub>AB</sub>(T − T<sub>ref</sub>)','Dos metales distintos unidos generan un voltaje proporcional a la diferencia de temperatura (efecto Seebeck).',[['V','voltaje termoeléctrico','V'],['S<sub>AB</sub>','coeficiente Seebeck del par (tipo K ≈ 41 µV/°C)','V/°C'],['T','temperatura de la punta','°C'],['T<sub>ref</sub>','temperatura de la unión fría','°C']]),
+ E('Sensor capacitivo','C = ε<sub>0</sub>ε<sub>r</sub>A/d · dC/dd = −C/d','La capacitancia cambia cuando cambia la separación entre placas.',[['C','capacitancia','F'],['ε<sub>0</sub>','permitividad del vacío, 8,854×10⁻¹²','F/m'],['ε<sub>r</sub>','permitividad relativa del dieléctrico','—'],['A','área de las placas','m²'],['d','separación entre placas','m']])],
+m13:[
+ E('Divisor de voltaje','V<sub>out</sub> = V<sub>cc</sub>·R<sub>fija</sub>/(R<sub>fija</sub> + R<sub>NTC</sub>)','Convierte el cambio de resistencia en cambio de voltaje.',[['V<sub>out</sub>','voltaje hacia el ADC','V'],['V<sub>cc</sub>','alimentación','V'],['R<sub>fija</sub>','resistencia fija del divisor','Ω'],['R<sub>NTC</sub>','resistencia del termistor','Ω']]),
+ E('Sensibilidad del divisor','dV/dT = −V<sub>cc</sub>·R<sub>fija</sub>/(R<sub>fija</sub> + R)²·dR/dT','Cuántos voltios cambia la salida por grado en el punto de operación.',[['dV/dT','sensibilidad','V/°C'],['dR/dT','sensibilidad del NTC','Ω/°C']]),
+ E('Resistencia fija óptima','R<sub>fija</sub> = R<sub>NTC</sub>(T<sub>0</sub>)','Maximiza la sensibilidad justo en la temperatura de interés.',[['T<sub>0</sub>','temperatura de operación (37 °C)','°C']]),
+ E('Autocalentamiento','ΔT = I²R/δ','La corriente calienta el propio sensor y lo hace leer de más.',[['ΔT','error por autocalentamiento','°C'],['I','corriente por el NTC','A'],['R','resistencia del NTC','Ω'],['I²R','potencia disipada','W'],['δ','constante de disipación','W/°C']]),
+ E('Resolución del termómetro','Resolución = LSB/|dV/dT|','El menor cambio de temperatura que el ADC alcanza a ver.',[['LSB','V<sub>cc</sub>/2<sup>n</sup>','V']])],
+m21:[
+ E('Pendiente por mínimos cuadrados','m = (NΣxy − ΣxΣy)/(NΣx² − (Σx)²)','La pendiente de la recta que minimiza la suma de errores al cuadrado.',[['m','pendiente (ganancia real del equipo)','mmHg/mmHg'],['N','número de puntos','—'],['x','valor del patrón','mmHg'],['y','lectura del equipo','mmHg'],['Σ','suma sobre todos los puntos','—']]),
+ E('Intercepto','b = (Σy − mΣx)/N','Lo que marca el equipo cuando el patrón está en cero: el offset.',[['b','intercepto u offset','mmHg']]),
+ E('Coeficiente de determinación','R² = 1 − Σ(y<sub>i</sub> − ŷ<sub>i</sub>)²/Σ(y<sub>i</sub> − ȳ)²','Qué fracción de la variación explica la recta. 1 es ajuste perfecto.',[['ŷ<sub>i</sub>','valor que predice la recta: m·x<sub>i</sub> + b','mmHg'],['ȳ','promedio de las lecturas','mmHg']]),
+ E('Error típico','s = √(Σr<sub>i</sub>²/(N − 2))','Dispersión de los puntos alrededor de la recta. Se usa como incertidumbre tipo A.',[['r<sub>i</sub>','residuo: y<sub>i</sub> − ŷ<sub>i</sub>','mmHg'],['N − 2','grados de libertad (se estimaron m y b)','—']]),
+ E('No linealidad','NL = máx|r<sub>i</sub>|/FS·100 %','El residuo más grande como porcentaje del fondo de escala.',[['FS','fondo de escala (300 mmHg)','mmHg']]),
+ E('Corrección','x = (y − b)/m','Ecuación que el software aplica para convertir la lectura en el valor real.',[['x','valor corregido','mmHg']])],
+m22:[
+ E('Relación señal a ruido','SNR = 10·log(P<sub>s</sub>/P<sub>n</sub>) = 20·log(V<sub>s</sub>/V<sub>n</sub>)','Compara la señal con el ruido en escala logarítmica.',[['SNR','relación señal a ruido','dB'],['P<sub>s</sub>, P<sub>n</sub>','potencia de la señal y del ruido','mV²'],['V<sub>s</sub>, V<sub>n</sub>','valores RMS de señal y ruido','mV']]),
+ E('Promediado','SNR ↑ 10·log N','Promediar N repeticiones de una señal reduce el ruido aleatorio en √N.',[['N','número de repeticiones promediadas','—']]),
+ E('Teorema de Nyquist','f<sub>s</sub> > 2f<sub>máx</sub>','Frecuencia de muestreo mínima para no perder información.',[['f<sub>s</sub>','frecuencia de muestreo','Hz'],['f<sub>máx</sub>','componente de mayor frecuencia de la señal','Hz'],['f<sub>s</sub>/2','frecuencia de Nyquist','Hz']]),
+ E('Frecuencia alias','f<sub>alias</sub> = |f − k·f<sub>s</sub>|','Frecuencia falsa que aparece si no se cumple Nyquist.',[['f','frecuencia real','Hz'],['k','entero más cercano a f/f<sub>s</sub>','—']]),
+ E('Filtro notch digital','H(z) = (1 − 2cos ω<sub>0</sub>z⁻¹ + z⁻²)/(1 − 2r cos ω<sub>0</sub>z⁻¹ + r²z⁻²)','Elimina una sola frecuencia (60 Hz) y deja pasar el resto.',[['z⁻¹','retardo de una muestra','—'],['ω<sub>0</sub>','2π·f<sub>0</sub>/f<sub>s</sub>, frecuencia a eliminar normalizada','rad/muestra'],['r','radio de los polos (cercano a 1 = muesca angosta)','—']])],
+m23:[
+ E('Sensibilidad','S = ΔV/ΔF','Cuánto cambia la salida por cada newton.',[['S','sensibilidad','mV/N'],['ΔV','cambio de voltaje','mV'],['ΔF','cambio de fuerza','N']]),
+ E('Histéresis','H% = máx|V<sub>bajada</sub> − V<sub>subida</sub>|/V<sub>FS</sub>·100','Mayor diferencia entre cargar y descargar, en porcentaje del fondo de escala.',[['V<sub>subida</sub>','salida mientras la fuerza aumenta','V'],['V<sub>bajada</sub>','salida mientras la fuerza disminuye','V'],['V<sub>FS</sub>','salida a fondo de escala','V']]),
+ E('No linealidad','NL% = máx|V − V<sub>recta</sub>|/V<sub>FS</sub>·100','Desviación de la curva respecto a la recta entre extremos.',[['V<sub>recta</sub>','valor de la recta ideal en ese punto','V']]),
+ E('Error en fuerza por histéresis','Error = H%·F<sub>máx</sub>/100','La histéresis expresada en newtons.',[['F<sub>máx</sub>','fuerza de fondo de escala','N']])],
+m31:[
+ E('Inclinación con dos ejes','θ = atan2(a<sub>x</sub>, a<sub>z</sub>)','En reposo la gravedad se reparte entre los ejes según el ángulo.',[['θ','ángulo de flexión','° o rad'],['a<sub>x</sub>','aceleración en el eje hacia adelante','g'],['a<sub>z</sub>','aceleración en el eje vertical','g'],['atan2','arcotangente que respeta el cuadrante','—']]),
+ E('Inclinación con tres ejes','θ<sub>pitch</sub> = atan(a<sub>x</sub>/√(a<sub>y</sub>² + a<sub>z</sub>²))','Versión que no se afecta si el sensor también rota hacia el lado.',[['a<sub>y</sub>','aceleración lateral','g']]),
+ E('Aceleraciones del movimiento','a<sub>t</sub> = r·θ̈ · a<sub>c</sub> = r·θ̇²','Al mover la cabeza se suman estas aceleraciones a la gravedad y ensucian el ángulo.',[['a<sub>t</sub>','aceleración tangencial','m/s²'],['a<sub>c</sub>','aceleración centrípeta','m/s²'],['r','radio de giro (cabeza respecto a C7)','m'],['θ̇','velocidad angular','rad/s'],['θ̈','aceleración angular','rad/s²']]),
+ E('Filtro exponencial (EMA)','y<sub>k</sub> = α·x<sub>k</sub> + (1 − α)·y<sub>k−1</sub>','Promedio que da más peso a las muestras recientes. α pequeño filtra más.',[['y<sub>k</sub>','salida filtrada actual','°'],['x<sub>k</sub>','muestra nueva','°'],['y<sub>k−1</sub>','salida filtrada anterior','°'],['α','coeficiente del filtro (0 a 1)','—']]),
+ E('Retardo del filtro','τ ≈ T<sub>s</sub>(1 − α)/α','Cuánto se atrasa la salida filtrada.',[['τ','constante de tiempo del filtro','s'],['T<sub>s</sub>','periodo de muestreo: 1/f<sub>s</sub>','s']]),
+ E('Sensibilidad digital','S = 2<sup>15</sup>/rango','Cuentas por g de un acelerómetro de 16 bits con signo.',[['S','sensibilidad','LSB/g'],['rango','escala elegida: 2, 4 u 8','g']])],
+m32:[
+ E('Venturi','Q = C<sub>d</sub>A<sub>2</sub>√(2ΔP/(ρ(1 − β⁴)))','Bernoulli más continuidad: la caída de presión en la garganta da el caudal.',[['Q','caudal','m³/s'],['C<sub>d</sub>','coeficiente de descarga (≈ 0,98)','—'],['A<sub>2</sub>','área de la garganta','m²'],['ΔP','presión diferencial','Pa'],['ρ','densidad del aire (1,2)','kg/m³'],['β','D<sub>2</sub>/D<sub>1</sub>, relación de diámetros','—']]),
+ E('Ley de King','E² = A + B·U<sup>n</sup>','Voltaje necesario para mantener caliente el hilo según la velocidad del aire.',[['E','voltaje del puente','V'],['A','pérdida de calor con aire quieto','V²'],['B','constante de convección','V²/(m/s)<sup>n</sup>'],['U','velocidad del aire','m/s'],['n','exponente, ≈ 0,5','—']]),
+ E('Neumotacógrafo','ΔP = R·Q + k·Q²','Lineal mientras el flujo sea laminar; el término cuadrático aparece con turbulencia.',[['R','resistencia lineal','cmH₂O/(L/s)'],['k','coeficiente turbulento','cmH₂O/(L/s)²']]),
+ E('Número de Reynolds','Re = ρvD/μ','Indica si el flujo es laminar (&lt; 2000) o turbulento.',[['v','velocidad media','m/s'],['D','diámetro del tubo','m'],['μ','viscosidad del aire (1,8×10⁻⁵)','Pa·s']]),
+ E('Velocidad media','v = Q/A','Caudal dividido por el área del tubo.',[['A','área: πD²/4','m²']])],
+m33:[
+ E('Galga extensiométrica','ΔR/R = GF·ε','El cambio relativo de resistencia es proporcional a la deformación.',[['ΔR','cambio de resistencia','Ω'],['R','resistencia nominal (350 Ω)','Ω'],['GF','factor de galga (≈ 2,1)','—'],['ε','deformación unitaria ΔL/L','m/m (µε = 10⁻⁶)']]),
+ E('Deformación en la viga','ε = 6FL/(E·b·h²)','Deformación en la raíz de una viga en voladizo con carga en la punta.',[['F','fuerza','N'],['L','distancia de la carga a la galga','m'],['E','módulo de Young (aluminio 70 GPa)','Pa'],['b','ancho de la viga','m'],['h','espesor de la viga','m']]),
+ E('Salida del puente','¼: V<sub>ex</sub>GFε/(4 + 2GFε) · ½: V<sub>ex</sub>GFε/2 · 1: V<sub>ex</sub>GFε','Más galgas activas dan más señal.',[['V<sub>ex</sub>','voltaje de excitación del puente','V'],['V<sub>o</sub>','voltaje de salida','V']]),
+ E('Piezoeléctrico','q = d<sub>33</sub>·F · V<sub>0</sub> = q/C','La fuerza genera carga y la carga en la capacitancia da un voltaje.',[['q','carga','C'],['d<sub>33</sub>','coeficiente piezoeléctrico','C/N (pC/N)'],['C','capacitancia del sensor y el cable','F']]),
+ E('Descarga del piezo','V(t) = V<sub>0</sub>·e<sup>−t/RC</sup>','La carga se fuga por la resistencia de entrada.',[['R','resistencia de entrada del circuito','Ω'],['RC','constante de tiempo τ','s']])],
+m41:[
+ E('Cociente de cocientes','R = (AC/DC)<sub>rojo</sub>/(AC/DC)<sub>IR</sub>','Relaciona la absorción pulsátil en las dos longitudes de onda.',[['AC','componente pulsátil (arterial)','unidades de luz'],['DC','componente continua (tejido)','unidades de luz'],['rojo','660 nm','—'],['IR','940 nm','—']]),
+ E('Calibración empírica','SpO₂ ≈ 110 − 25·R','Recta aproximada; cada fabricante usa su propia curva medida en voluntarios.',[['SpO₂','saturación periférica de oxígeno','%']]),
+ E('Índice de perfusión','IP = AC<sub>IR</sub>/DC<sub>IR</sub>·100 %','Qué tanto pulsa la señal. Por debajo de 0,5 % la medición es poco confiable.',[['IP','índice de perfusión','%']]),
+ E('Transductor de presión','V<sub>o</sub> = 5 µV/V/mmHg · V<sub>ex</sub> · P','Sensibilidad estándar de los transductores desechables.',[['V<sub>o</sub>','voltaje de salida del puente','V'],['V<sub>ex</sub>','excitación','V'],['P','presión','mmHg']]),
+ E('Error hidrostático','ΔP = ρgh ≈ 0,74 mmHg/cm','Presión que agrega o quita la columna de líquido si el transductor no está a la altura del corazón.',[['h','desnivel entre transductor y eje flebostático','m'],['ρ','densidad de la solución (≈ 1000)','kg/m³']])],
+m42:[
+ E('Volumen a partir del flujo','V(t) = ∫Q dt ≈ ΣQ<sub>k</sub>Δt','El volumen se obtiene sumando flujo por tiempo.',[['V','volumen','L'],['Q','flujo','L/s'],['Δt','periodo de muestreo','s']]),
+ E('Modelo de espiración forzada','V(t) = CVF(1 − e<sup>−t/τ</sup>)','Aproximación de primer orden; τ crece con la obstrucción.',[['CVF','capacidad vital forzada','L'],['τ','constante de tiempo pulmonar','s']]),
+ E('VEF₁','VEF₁ = CVF(1 − e<sup>−1/τ</sup>)','Volumen espirado en el primer segundo.',[['VEF₁','volumen espiratorio forzado en 1 s','L'],['VEF₁/CVF','índice de Tiffeneau; &lt; 0,70 es obstructivo','—']]),
+ E('Deriva','Deriva = Q<sub>offset</sub>·t','Un error constante en el flujo se vuelve un error creciente en el volumen.',[['Q<sub>offset</sub>','error de cero del sensor','L/s']]),
+ E('Volumen minuto','V̇<sub>E</sub> = V<sub>T</sub>·FR','Aire movilizado por minuto.',[['V<sub>T</sub>','volumen corriente','L'],['FR','frecuencia respiratoria','rpm']])],
+m43:[
+ E('Corriente promedio','Ī = Σ I<sub>k</sub>·D<sub>k</sub>','Cada bloque aporta su corriente por la fracción de tiempo que está encendido.',[['Ī','corriente promedio','mA'],['I<sub>k</sub>','corriente del bloque k encendido','mA'],['D<sub>k</sub>','ciclo de trabajo del bloque (0 a 1)','—']]),
+ E('Autonomía','Autonomía = 0,8·C<sub>bat</sub>/Ī','Se toma el 80 % de la capacidad para no descargar del todo la batería.',[['C<sub>bat</sub>','capacidad nominal','mAh'],['Autonomía','tiempo de uso','h']]),
+ E('Tasa de datos','n<sub>ejes</sub>·b·f<sub>s</sub>','Bytes por segundo que produce el sensor.',[['n<sub>ejes</sub>','número de canales (6 en una IMU)','—'],['b','bytes por muestra (2 para 16 bits)','B'],['f<sub>s</sub>','frecuencia de muestreo','Hz']]),
+ E('Ciclo de trabajo de la radio','D<sub>BLE</sub> = t<sub>tx</sub>/T<sub>envío</sub>','Fracción del tiempo en que la radio transmite.',[['t<sub>tx</sub>','duración de cada transmisión (≈ 3 ms)','s'],['T<sub>envío</sub>','intervalo entre envíos','s']])]
+};
+function explHTML(code){
+  const a=EXPL['m'+String(code).replace('.','')]; if(!a) return '';
+  return `<section class="expl"><h2>Qué significa cada fórmula</h2><div class="egrid">${a.map(e=>`<div class="ecard"><div class="en">${e.n}</div><div class="eq">${e.f}</div><p>${e.d}</p><table class="vt">${e.v.map(r=>`<tr><td class="sym">${r[0]}</td><td>${r[1]}</td><td class="un">${r[2]}</td></tr>`).join('')}</table></div>`).join('')}</div></section>`;
+}
+
+/* =============== plantilla de módulo =============== */
+function layout(o){
+  const plots=(o.plots||[]).map(p=>`<figure class="plot ${p.cls||''}" id="${p.id}-f"><figcaption><b>${p.cap}</b>${p.sub?`<span>${p.sub}</span>`:''}</figcaption><canvas id="${p.id}" role="img" aria-label="${p.cap}"></canvas><div class="legend"></div></figure>`).join('');
+  const qs=(o.practice||[]).map(([q,a])=>`<details><summary>${q}</summary><p>${a}</p></details>`).join('');
+  return `<article class="mod">
+  <header class="mh"><div class="eyebrow">Unidad ${o.unit} · Subtemática ${o.code}</div><h1>${o.title}</h1><p class="lead">${o.lead}</p></header>
+  <div class="case"><b>Caso</b><p>${o.caso}</p></div>
+  <section class="theory"><div class="txt">${o.theory}</div><div class="formulas"><div class="ft">Fórmulas clave</div>${o.formulas}</div></section>
+  ${explHTML(o.code)}${o.before||''}
+  <section class="lab"><div class="lt"><h2>Simulador</h2><span>Mueve los parámetros y mira cómo cambia la respuesta.</span></div><div class="ctl" id="ctl"></div><div class="plots ${o.plotsCls||''}">${plots}<div id="kpis" class="kpis"></div></div></section>
+  <section class="calc"><h2>Cálculo con tus valores</h2><div id="calc"></div></section>
+  ${o.after||''}
+  <section class="practice"><h2>Para practicar</h2>${qs}</section>
+  </article>`;
+}
+const eq=(f,s)=>`<div class="eq">${f}${s?`<small>${s}</small>`:''}</div>`;
+const step=(l,e)=>`<div class="step"><div class="sl">${l}</div><div class="se">${e}</div></div>`;
+const kpi=(k,v)=>`<div class="kpi"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+const pill=(cls,txt)=>`<span class="pill ${cls}">${txt}</span>`;
+function show(root,id,on){ const el=root.querySelector('#'+id+'-f'); if(el) el.hidden=!on; }
+
+/* =============== utilidades extra =============== */
+function gaussGen(seed){ const r=lcg(seed); return ()=>{ let u=r()||1e-9, v=r(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*PI*v); }; }
+function biquad(x,c){ const y=new Array(x.length); let x1=0,x2=0,y1=0,y2=0; for(let i=0;i<x.length;i++){ const yi=c.b[0]*x[i]+c.b[1]*x1+c.b[2]*x2-c.a[1]*y1-c.a[2]*y2; x2=x1;x1=x[i];y2=y1;y1=yi;y[i]=yi; } return y; }
+function lpCoef(fc,fs,Q=0.7071){ const w=2*PI*fc/fs, al=Math.sin(w)/(2*Q), c=Math.cos(w), a0=1+al; return {b:[(1-c)/2/a0,(1-c)/a0,(1-c)/2/a0],a:[1,-2*c/a0,(1-al)/a0]}; }
+function notchCoef(f0,fs,Q=30){ const w=2*PI*f0/fs, al=Math.sin(w)/(2*Q), c=Math.cos(w), a0=1+al; return {b:[1/a0,-2*c/a0,1/a0],a:[1,-2*c/a0,(1-al)/a0]}; }
+const power=a=>a.reduce((s,x)=>s+x*x,0)/a.length;
+const mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
+const stdev=a=>{ const m=mean(a); return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/Math.max(1,a.length-1)); };
+function pulseShape(p){ p=((p%1)+1)%1; const up=p<0.15?Math.exp(-(((p-0.15)/0.05)**2)):Math.exp(-(((p-0.15)/0.16)**2)); return (up+0.25*Math.exp(-(((p-0.45)/0.06)**2)))/1.0; }
+function ecgBeat(t,A){ const g=(c,w,h)=>h*Math.exp(-(((t-c)/w)**2)); return g(0.2,0.025,0.15*A)+g(0.33,0.01,-0.1*A)+g(0.35,0.012,A)+g(0.37,0.01,-0.2*A)+g(0.6,0.045,0.3*A); }
+const NTC=(T,R25,beta)=>R25*Math.exp(beta*(1/(T+273.15)-1/298.15));
+
+const MODS={};
+
+/* ---------- 1.1 ---------- */
+MODS.m11={unit:1,code:'1.1',title:'Definiciones básicas',nav:'Definiciones básicas',
+init(root){
+  root.innerHTML=layout({unit:1,code:'1.1',title:this.title,
+    lead:'Un sensor convierte una magnitud física o biológica en una señal eléctrica. Antes de usarlo hay que saber qué tan fino mide (resolución), hasta dónde mide (rango), qué tan cerca está del valor real (exactitud) y qué tan repetible es (precisión).',
+    caso:'Termómetro digital clínico con un LM35 (10 mV/°C), un amplificador de ganancia G y un conversor análogo-digital (ADC) de n bits. Se leen 60 muestras seguidas de un paciente con 37,0 °C para ver la diferencia entre exactitud y precisión.',
+    theory:`<p><b>Sensor</b> es el elemento que responde al mensurando. <b>Transductor</b> es cualquier dispositivo que convierte energía de una forma a otra; todo sensor es un transductor, pero no al revés (un parlante es transductor y no es sensor). La <b>cadena de medición</b> típica es: mensurando → sensor → acondicionamiento (amplificar, filtrar) → ADC → procesamiento → visualización.</p>
+    <ul><li><b>Rango:</b> valores mínimo y máximo que se pueden medir.</li>
+    <li><b>Resolución:</b> el menor cambio que el sistema distingue. Con un ADC la fija el LSB.</li>
+    <li><b>Exactitud:</b> cercanía del promedio al valor real. Se daña con errores sistemáticos (offset, ganancia).</li>
+    <li><b>Precisión:</b> dispersión entre lecturas repetidas. Se daña con ruido aleatorio.</li>
+    <li><b>Sensibilidad:</b> cambio de salida por unidad de entrada (mV/°C).</li></ul>`,
+    formulas: eq(`<span class="m">V</span> = <span class="m">S·G·T</span>`,'S = 10 mV/°C')+
+      eq(`LSB = ${fr('<span class="m">V</span><sub>ref</sub>','2<sup><span class="m">n</span></sup>')}`)+
+      eq(`Resolución = ${fr('LSB','<span class="m">S·G</span>')}`,'en °C')+
+      eq(`<span class="m">T</span><sub>máx</sub> = ${fr('<span class="m">V</span><sub>ref</sub>','<span class="m">S·G</span>')}`,'rango antes de saturar')+
+      eq(`Exactitud: |<span class="m">x̄</span> − <span class="m">x</span><sub>real</sub>| &nbsp; Precisión: <span class="m">σ</span>`),
+    plots:[{id:'p1',cap:'Temperatura real vs. lectura digital',sub:'escalones por cuantización'},{id:'p2',cap:'60 lecturas repetidas a 37,0 °C',cls:'short'}],
+    practice:[
+      ['LM35, G = 5, ADC de 10 bits con Vref = 5 V. ¿Cuál es la resolución?','LSB = 5/1024 = 4,88 mV. S·G = 50 mV/°C. Resolución = 4,88/50 = 0,098 °C.'],
+      ['Un termómetro siempre marca 37,4 °C con σ = 0,02 °C cuando el paciente tiene 37,0 °C. ¿Es exacto o preciso?','Preciso pero no exacto: las lecturas casi no varían, pero están corridas 0,4 °C. Se arregla calibrando el offset.'],
+      ['¿Por qué no conviene subir mucho la ganancia del amplificador?','Mejora la resolución, pero reduce el rango. Con G = 10 y Vref = 3,3 V el máximo es 33 °C: el termómetro saturaría con cualquier paciente.']]
+  });
+  const ctl=makeControls($('#ctl',root),'s11',[
+    {id:'G',label:'Ganancia del amplificador G',min:1,max:10,step:0.5,value:5,dec:1},
+    {type:'seg',id:'n',label:'Bits del ADC',options:[['8','8'],['10','10'],['12','12'],['16','16']],value:'10'},
+    {type:'seg',id:'vr',label:'V<sub>ref</sub> del ADC',options:[['1.1','1,1 V'],['3.3','3,3 V'],['5','5 V']],value:'5'},
+    {id:'off',label:'Error de offset (sistemático)',min:-1,max:1,step:0.05,value:0.3,unit:'°C',dec:2},
+    {id:'sd',label:'Ruido aleatorio σ',min:0,max:0.5,step:0.01,value:0.1,unit:'°C',dec:2}],upd);
+  function upd(v){
+    const n=+v.n, Vr=+v.vr, S=0.01*v.G, LSB=Vr/Math.pow(2,n), res=LSB/S, Tmax=Vr/S;
+    const q=T=>{ const V=clamp(T*S,0,Vr-LSB); return Math.floor(V/LSB+0.5)*LSB/S; };
+    const t=[],yi=[],yq=[]; for(let i=0;i<=1200;i++){ const T=30+15*i/1200; t.push(T); yi.push(T); yq.push(q(T+v.off)); }
+    P(root,'p1',{series:[{x:t,y:yi,color:'s6',dash:[6,4],label:'ideal'},{x:t,y:yq,color:'s1',label:'lectura digital'}],xlabel:'temperatura real (°C)',ylabel:'lectura (°C)'});
+    const g=gaussGen(11), xs=[],rd=[]; for(let i=0;i<60;i++){ xs.push(i+1); rd.push(q(37+v.off+v.sd*g())); }
+    const m=mean(rd), s=stdev(rd);
+    P(root,'p2',{series:[{x:xs,y:rd,dots:true,r:3,color:'s2',label:'lecturas'}],hlines:[{y:37,color:'s3',label:'37,0 real'},{y:m,color:'s2',dash:[3,3],label:'promedio'}],xlabel:'n.º de lectura',ylabel:'°C'});
+    $('#kpis',root).innerHTML=kpi('Resolución',fmt(res,4)+' °C')+kpi('Temperatura máxima medible',fmt(Tmax,1)+' °C')+kpi('Exactitud (error del promedio)',fmt(Math.abs(m-37),3)+' °C')+kpi('Precisión (σ)',fmt(s,3)+' °C');
+    $('#calc',root).innerHTML=`<div class="steps">
+      ${step('1. Sensibilidad total',`<span class="m">S·G</span> = 10 mV/°C · ${fmt(v.G,1)} = ${B(fmt(S*1000,1)+' mV/°C')}`)}
+      ${step('2. Tamaño del LSB',`LSB = ${fr(fmt(Vr,1)+' V','2<sup>'+n+'</sup>')} = ${B(fmt(LSB*1000,4)+' mV')}`)}
+      ${step('3. Resolución en temperatura',`${fr(fmt(LSB*1000,4)+' mV',fmt(S*1000,1)+' mV/°C')} = ${B(fmt(res,4)+' °C')}`)}
+      ${step('4. Rango antes de saturar',`<span class="m">T</span><sub>máx</sub> = ${fr(fmt(Vr,1),fmt(S,3))} = ${B(fmt(Tmax,1)+' °C')}`)}
+      ${step('5. Código del ADC para 37 °C',`${fr(fmt(37*S,3)+' V',fmt(LSB*1000,3)+' mV')} ≈ ${B(String(Math.round(Math.min(37*S,Vr)/LSB)))}`)}
+      ${step('6. Lecturas a 37 °C',`<span class="m">x̄</span> = ${B(fmt(m,3)+' °C')} &nbsp; <span class="m">σ</span> = ${B(fmt(s,3)+' °C')}`)}
+    </div>${Tmax<42?'<p class="note alert">El rango no cubre la fiebre alta (42 °C). Hay que bajar la ganancia o subir Vref.</p>':''}${res>0.1?'<p class="note alert">La resolución es peor que 0,1 °C, que es lo mínimo esperado en un termómetro clínico.</p>':''}`;
+  }
+  ctl.fire();
+}};
+
+/* ---------- 1.2 ---------- */
+MODS.m12={unit:1,code:'1.2',title:'Tipos de sensores',nav:'Tipos de sensores',
+init(root){
+  root.innerHTML=layout({unit:1,code:'1.2',title:this.title,
+    lead:'Los sensores se clasifican por el principio físico que usan y por si necesitan o no energía externa. Cada principio tiene una curva de respuesta distinta: unas casi rectas, otras muy curvas pero muy sensibles.',
+    caso:'Medir la temperatura corporal con tres sensores distintos (RTD Pt100, termistor NTC, termopar tipo K) y medir el movimiento del tórax con un sensor capacitivo de placas paralelas en una banda respiratoria.',
+    theory:`<div class="tbl"><table><tr><th>Principio</th><th>Ejemplo biomédico</th><th>Tipo</th></tr>
+    <tr><td>Resistivo</td><td>RTD, termistor, galga, potenciómetro</td><td>pasivo</td></tr>
+    <tr><td>Capacitivo</td><td>banda respiratoria, presión, humedad</td><td>pasivo</td></tr>
+    <tr><td>Inductivo</td><td>LVDT, pletismografía por inductancia</td><td>pasivo</td></tr>
+    <tr><td>Piezoeléctrico</td><td>ultrasonido, impacto, pulso</td><td>activo</td></tr>
+    <tr><td>Termoeléctrico</td><td>termopar</td><td>activo</td></tr>
+    <tr><td>Óptico</td><td>oxímetro (fotodiodo), fibra óptica</td><td>pasivo/activo</td></tr>
+    <tr><td>Electroquímico</td><td>glucómetro, electrodos de ECG</td><td>activo</td></tr></table></div>
+    <p>Un sensor <b>activo</b> genera su propia señal (termopar, piezo). Uno <b>pasivo</b> cambia una propiedad (R, C, L) y necesita una excitación externa para leerla.</p>`,
+    formulas: eq(`<span class="m">R</span>(<span class="m">T</span>) = <span class="m">R</span><sub>0</sub>(1 + <span class="m">αT</span>)`,'Pt100, α = 0,00385 /°C')+
+      eq(`<span class="m">R</span>(<span class="m">T</span>) = <span class="m">R</span><sub>25</sub> e<sup><span class="m">β</span>(1/<span class="m">T</span> − 1/298,15)</sup>`,'NTC, T en K')+
+      eq(`<span class="m">α</span><sub>NTC</sub> = −${fr('<span class="m">β</span>','<span class="m">T</span>²')}`)+
+      eq(`<span class="m">V</span> = <span class="m">S</span><sub>AB</sub>(<span class="m">T</span> − <span class="m">T</span><sub>ref</sub>)`,'termopar K ≈ 41 µV/°C')+
+      eq(`<span class="m">C</span> = ${fr('<span class="m">ε</span><sub>0</sub><span class="m">ε</span><sub>r</sub><span class="m">A</span>','<span class="m">d</span>')} &nbsp; ${fr('d<span class="m">C</span>','d<span class="m">d</span>')} = −${fr('<span class="m">C</span>','<span class="m">d</span>')}`),
+    plots:[{id:'p1',cap:'Curva de transferencia del sensor elegido'},{id:'p2',cap:'Comparación de linealidad (salida normalizada, 0 a 100 °C)',cls:'short'}],
+    practice:[
+      ['¿Cuánto cambia la resistencia de un Pt100 entre 36 y 38 °C?','ΔR = 100·0,00385·2 = 0,77 Ω. Es poco: por eso el Pt100 se lee con puente o fuente de corriente de precisión.'],
+      ['Un NTC de 10 kΩ con β = 3950, ¿qué sensibilidad relativa tiene a 37 °C?','α = −3950/310,15² = −4,1 %/°C, unas 11 veces más que un Pt100. A cambio es muy poco lineal.'],
+      ['¿Por qué un termopar necesita compensación de unión fría?','Porque mide diferencia de temperatura entre la punta y los terminales. Si los terminales cambian de temperatura, cambia la lectura.']]
+  });
+  const ctl=makeControls($('#ctl',root),'s12',[
+    {type:'seg',id:'s',label:'Sensor',options:[['pt','Pt100'],['ntc','NTC'],['tc','Termopar K'],['cap','Capacitivo']],value:'ntc'},
+    {id:'T',label:'Temperatura medida',min:-20,max:120,step:0.5,value:37,unit:'°C',dec:1,showIf:v=>v.s!=='cap'},
+    {id:'R25',label:'R<sub>25</sub> del NTC',min:1,max:100,step:1,value:10,unit:'kΩ',dec:0,showIf:v=>v.s==='ntc'},
+    {id:'beta',label:'β del NTC',min:3000,max:4500,step:10,value:3950,unit:'K',dec:0,showIf:v=>v.s==='ntc'},
+    {id:'Tr',label:'Temperatura de la unión fría',min:0,max:40,step:0.5,value:25,unit:'°C',dec:1,showIf:v=>v.s==='tc'},
+    {id:'A',label:'Área de las placas A',min:1,max:20,step:0.5,value:4,unit:'cm²',dec:1,showIf:v=>v.s==='cap'},
+    {id:'d',label:'Separación d (cambia al respirar)',min:0.1,max:2,step:0.01,value:0.5,unit:'mm',dec:2,showIf:v=>v.s==='cap'},
+    {id:'er',label:'Permitividad relativa ε<sub>r</sub> del dieléctrico',min:1,max:10,step:0.1,value:3,dec:1,showIf:v=>v.s==='cap'}],upd);
+  function upd(v){
+    const xs=[],ys=[]; let pt,unitY,html,kp;
+    if(v.s==='cap'){
+      const e0=8.854e-12, A=v.A/1e4, C=d=>e0*v.er*A/(d/1000)*1e12;
+      for(let i=0;i<=400;i++){ const d=0.1+1.9*i/400; xs.push(d); ys.push(C(d)); }
+      const c0=C(v.d), sens=-c0/v.d;
+      P(root,'p1',{series:[{x:xs,y:ys,color:'s1',label:'C(d)'}],points:[{x:v.d,y:c0,color:'s2',text:fmt(c0,1)+' pF'}],xlabel:'separación d (mm)',ylabel:'C (pF)',yzero:true});
+      $('#kpis',root).innerHTML=kpi('Capacitancia',fmt(c0,2)+' pF')+kpi('Sensibilidad dC/dd',fmt(sens,2)+' pF/mm')+kpi('Tipo',pill('ok','pasivo, capacitivo'))+kpi('Linealidad',pill('warn','hiperbólica'));
+      $('#calc',root).innerHTML=`<div class="steps">
+        ${step('1. Capacitancia',`<span class="m">C</span> = ${fr('8,854×10<sup>−12</sup>·'+fmt(v.er,1)+'·'+sci(A),sci(v.d/1000))} = ${B(fmt(c0,2)+' pF')}`)}
+        ${step('2. Sensibilidad',`${fr('d<span class="m">C</span>','d<span class="m">d</span>')} = −${fr(fmt(c0,2),fmt(v.d,2))} = ${B(fmt(sens,2)+' pF/mm')}`)}
+        ${step('3. Si al inspirar d sube 10 %',`Δ<span class="m">C</span> = ${B(fmt(C(v.d*1.1)-c0,2)+' pF')}`)}
+      </div><p class="note">La sensibilidad crece mucho con placas cercanas. Para linealizar se usa la configuración diferencial o se mide la impedancia 1/(jωC), que sí es proporcional a d.</p>`;
+    } else {
+      let f,lab;
+      if(v.s==='pt'){ f=T=>100*(1+0.00385*T); lab='R (Ω)'; }
+      else if(v.s==='ntc'){ f=T=>NTC(T,v.R25*1000,v.beta)/1000; lab='R (kΩ)'; }
+      else { f=T=>0.041*(T-v.Tr); lab='V (mV)'; }
+      for(let i=0;i<=400;i++){ const T=-20+140*i/400; xs.push(T); ys.push(f(T)); }
+      const y0=f(v.T), sl=(f(v.T+0.05)-f(v.T-0.05))/0.1;
+      P(root,'p1',{series:[{x:xs,y:ys,color:'s1',label:lab}],points:[{x:v.T,y:y0,color:'s2',text:fmt(y0,3)}],xlabel:'temperatura (°C)',ylabel:lab});
+      if(v.s==='pt'){ $('#kpis',root).innerHTML=kpi('Resistencia',fmt(y0,3)+' Ω')+kpi('Sensibilidad',fmt(sl,3)+' Ω/°C')+kpi('Sensibilidad relativa',fmt(sl/y0*100,3)+' %/°C')+kpi('Tipo',pill('ok','pasivo, muy lineal'));
+        $('#calc',root).innerHTML=`<div class="steps">${step('1. Resistencia',`<span class="m">R</span> = 100(1 + 0,00385·${fmt(v.T,1)}) = ${B(fmt(y0,3)+' Ω')}`)}${step('2. Sensibilidad',`d<span class="m">R</span>/d<span class="m">T</span> = <span class="m">R</span><sub>0</sub><span class="m">α</span> = ${B('0,385 Ω/°C')}`)}${step('3. Con 1 mA de excitación',`<span class="m">V</span> = ${B(fmt(y0,2)+' mV')}, cambia 0,385 mV/°C`)}</div>`; }
+      else if(v.s==='ntc'){ const Tk=v.T+273.15, al=-v.beta/Tk/Tk;
+        $('#kpis',root).innerHTML=kpi('Resistencia',fmt(y0,3)+' kΩ')+kpi('Sensibilidad',fmt(sl*1000,1)+' Ω/°C')+kpi('Sensibilidad relativa',fmt(al*100,2)+' %/°C')+kpi('Tipo',pill('warn','pasivo, no lineal'));
+        $('#calc',root).innerHTML=`<div class="steps">${step('1. Temperatura en kelvin',`<span class="m">T</span> = ${fmt(v.T,1)} + 273,15 = ${B(fmt(Tk,2)+' K')}`)}${step('2. Resistencia (modelo β)',`<span class="m">R</span> = ${fmt(v.R25,0)} kΩ · e<sup>${fmt(v.beta,0)}(1/${fmt(Tk,2)} − 1/298,15)</sup> = ${B(fmt(y0,3)+' kΩ')}`)}${step('3. Coeficiente de temperatura',`<span class="m">α</span> = −${fr(fmt(v.beta,0),fmt(Tk,2)+'²')} = ${B(fmt(al*100,3)+' %/°C')}`)}${step('4. Sensibilidad absoluta',`<span class="m">α·R</span> = ${B(fmt(al*y0*1000,1)+' Ω/°C')}`)}</div>`; }
+      else { $('#kpis',root).innerHTML=kpi('Voltaje',fmt(y0,3)+' mV')+kpi('Sensibilidad',fmt(41,0)+' µV/°C')+kpi('Error si la unión fría sube 5 °C',fmt(-5,0)+' °C')+kpi('Tipo',pill('ok','activo'));
+        $('#calc',root).innerHTML=`<div class="steps">${step('1. Voltaje termoeléctrico',`<span class="m">V</span> = 41 µV/°C·(${fmt(v.T,1)} − ${fmt(v.Tr,1)}) = ${B(fmt(y0*1000,0)+' µV')}`)}${step('2. Ganancia necesaria para 10 mV/°C',`<span class="m">G</span> = ${fr('10 mV','41 µV')} = ${B('244')}`)}</div><p class="note">El voltaje es muy pequeño: un termopar casi nunca se usa en temperatura corporal; sí en hornos, esterilizadores y autoclaves.</p>`; }
+    }
+    const T0=[],a=[],b=[],c=[]; const nt=T=>{ const r=NTC(T,10000,3950); return (NTC(0,10000,3950)-r)/(NTC(0,10000,3950)-NTC(100,10000,3950)); };
+    for(let i=0;i<=200;i++){ const T=i/2; T0.push(T); a.push(T/100); b.push(nt(T)); c.push(T/100); }
+    P(root,'p2',{series:[{x:T0,y:a,color:'s1',label:'Pt100 y termopar (casi rectos)'},{x:T0,y:b,color:'s2',label:'NTC'},{x:T0,y:c,color:'s6',dash:[4,4],label:'recta ideal'}],xlabel:'temperatura (°C)',ylabel:'salida normalizada'});
+  }
+  ctl.fire();
+}};
+
+/* ---------- 1.3 ---------- */
+MODS.m13={unit:1,code:'1.3',title:'Dispositivos basados en sensores',nav:'Dispositivos basados en sensores',
+init(root){
+  root.innerHTML=layout({unit:1,code:'1.3',title:this.title,
+    lead:'Un dispositivo junta el sensor con su circuito de acondicionamiento, la conversión digital y la lógica de alarma. El diseño del acondicionamiento decide si el equipo es útil en el rango clínico.',
+    caso:'Termómetro para incubadora o monitor con un NTC en divisor de voltaje leído por el ADC de un microcontrolador. La pregunta de diseño es qué resistencia fija poner para que el sensor sea más sensible justo alrededor de 37 °C, y cuánta corriente se puede pasar sin que el propio NTC se caliente.',
+    theory:`<p>El divisor de voltaje es el acondicionamiento más simple para un sensor resistivo. La salida es máxima en pendiente cuando la resistencia fija iguala a la del sensor en el punto de operación. Por eso para 37 °C se elige <span class="m">R<sub>fija</sub> = R<sub>NTC</sub>(37 °C)</span>.</p>
+    <p><b>Autocalentamiento.</b> La corriente que atraviesa el NTC disipa potencia <span class="m">P = I²R</span> y lo calienta por encima del paciente. Con la constante de disipación δ (mW/°C) el error es <span class="m">P/δ</span>.</p>
+    <div class="tbl"><table><tr><th>Equipo</th><th>Mensurando</th><th>Sensor</th></tr>
+    <tr><td>Monitor de signos vitales</td><td>ECG, SpO₂, PANI, T</td><td>electrodos, fotodiodo, piezorresistivo, NTC</td></tr>
+    <tr><td>Incubadora neonatal</td><td>T aire y piel, humedad</td><td>NTC, capacitivo</td></tr>
+    <tr><td>Ventilador mecánico</td><td>flujo, presión, O₂</td><td>hilo caliente, diferencial, galvánico</td></tr>
+    <tr><td>Bomba de infusión</td><td>presión de línea, burbujas</td><td>galga, ultrasonido</td></tr>
+    <tr><td>Glucómetro</td><td>glucosa</td><td>electroquímico (amperométrico)</td></tr></table></div>`,
+    formulas: eq(`<span class="m">V</span><sub>out</sub> = <span class="m">V</span><sub>cc</sub>${fr('<span class="m">R</span><sub>fija</sub>','<span class="m">R</span><sub>fija</sub> + <span class="m">R</span><sub>NTC</sub>')}`,'NTC arriba')+
+      eq(`${fr('d<span class="m">V</span>','d<span class="m">T</span>')} = −<span class="m">V</span><sub>cc</sub>${fr('<span class="m">R</span><sub>fija</sub>','(<span class="m">R</span><sub>fija</sub>+<span class="m">R</span>)²')}${fr('d<span class="m">R</span>','d<span class="m">T</span>')}`)+
+      eq(`Óptimo: <span class="m">R</span><sub>fija</sub> = <span class="m">R</span><sub>NTC</sub>(<span class="m">T</span><sub>0</sub>)`)+
+      eq(`Δ<span class="m">T</span><sub>auto</sub> = ${fr('<span class="m">I</span>²<span class="m">R</span>','<span class="m">δ</span>')}`)+
+      eq(`Resolución = ${fr('LSB','|d<span class="m">V</span>/d<span class="m">T</span>|')}`),
+    plots:[{id:'p1',cap:'Voltaje del divisor vs. temperatura'}],
+    practice:[
+      ['NTC de 10 kΩ (β = 3950). ¿Qué R fija maximiza la sensibilidad a 37 °C?','R(37 °C) = 10k·e<sup>3950(1/310,15 − 1/298,15)</sup> ≈ 5,98 kΩ. Se usa el valor comercial más cercano, 6,2 kΩ.'],
+      ['Con 3,3 V y R = 6 kΩ, ¿cuánto se autocalienta un NTC con δ = 1,5 mW/°C?','I = 3,3/12k = 0,275 mA; P = I²·6k = 0,45 mW; ΔT = 0,3 °C. Es mucho para un termómetro clínico: hay que bajar la excitación.'],
+      ['¿Por qué un ADC de 12 bits mejora el termómetro aunque el sensor sea el mismo?','Porque el LSB baja de 3,2 mV a 0,8 mV y la resolución en °C mejora 4 veces.']]
+  });
+  const ctl=makeControls($('#ctl',root),'s13',[
+    {type:'seg',id:'vcc',label:'Alimentación',options:[['3.3','3,3 V'],['5','5 V']],value:'3.3'},
+    {id:'Rf',label:'Resistencia fija',min:1,max:100,value:10,log:true,unit:'kΩ'},
+    {id:'R25',label:'R<sub>25</sub> del NTC',min:1,max:100,step:1,value:10,unit:'kΩ',dec:0},
+    {id:'beta',label:'β',min:3000,max:4500,step:10,value:3950,unit:'K',dec:0},
+    {type:'seg',id:'n',label:'ADC',options:[['10','10 bits'],['12','12 bits']],value:'10'},
+    {id:'dl',label:'Constante de disipación δ',min:0.5,max:5,step:0.1,value:1.5,unit:'mW/°C',dec:1}],upd);
+  function upd(v){
+    const Vcc=+v.vcc, Rf=v.Rf*1000, R=T=>NTC(T,v.R25*1000,v.beta), Ropt=R(37);
+    const Vo=(T,rf)=>Vcc*rf/(rf+R(T));
+    const t=[],a=[],b=[]; for(let i=0;i<=300;i++){ const T=20+25*i/300; t.push(T); a.push(Vo(T,Rf)); b.push(Vo(T,Ropt)); }
+    const sens=(Vo(37.05,Rf)-Vo(36.95,Rf))/0.1, sOpt=(Vo(37.05,Ropt)-Vo(36.95,Ropt))/0.1;
+    const LSB=Vcc/Math.pow(2,+v.n), res=LSB/Math.abs(sens);
+    const I=Vcc/(Rf+Ropt), Pw=I*I*Ropt, dT=Pw*1000/v.dl;
+    P(root,'p1',{series:[{x:t,y:b,color:'s6',dash:[6,4],label:'R fija óptima ('+fmt(Ropt/1000,2)+' kΩ)'},{x:t,y:a,color:'s1',label:'tu diseño'}],vlines:[{x:37,color:'s3',label:'37 °C'}],points:[{x:37,y:Vo(37,Rf),color:'s2'}],xlabel:'temperatura (°C)',ylabel:'V_out (V)'});
+    $('#kpis',root).innerHTML=kpi('Sensibilidad a 37 °C',fmt(sens*1000,2)+' mV/°C')+kpi('Frente al óptimo',fmt(sens/sOpt*100,1)+' %')+kpi('Resolución',fmt(res,3)+' °C')+kpi('Autocalentamiento',fmt(dT,3)+' °C');
+    $('#calc',root).innerHTML=`<div class="steps">
+      ${step('1. Resistencia del NTC a 37 °C',`<span class="m">R</span> = ${fmt(v.R25,0)} kΩ·e<sup>${fmt(v.beta,0)}(1/310,15 − 1/298,15)</sup> = ${B(fmt(Ropt/1000,3)+' kΩ')}`)}
+      ${step('2. Voltaje a 37 °C',`<span class="m">V</span> = ${fmt(Vcc,1)}·${fr(fmt(Rf/1000,2),fmt(Rf/1000,2)+' + '+fmt(Ropt/1000,2))} = ${B(fmt(Vo(37,Rf),4)+' V')}`)}
+      ${step('3. Sensibilidad en el punto de operación',`|d<span class="m">V</span>/d<span class="m">T</span>| = ${B(fmt(Math.abs(sens)*1000,2)+' mV/°C')}`)}
+      ${step('4. Resolución con el ADC',`${fr(fmt(LSB*1000,3)+' mV',fmt(Math.abs(sens)*1000,2)+' mV/°C')} = ${B(fmt(res,3)+' °C')}`)}
+      ${step('5. Corriente y potencia en el NTC',`<span class="m">I</span> = ${B(fmt(I*1000,3)+' mA')} &nbsp; <span class="m">P</span> = <span class="m">I</span>²<span class="m">R</span> = ${B(fmt(Pw*1000,3)+' mW')}`)}
+      ${step('6. Error por autocalentamiento',`Δ<span class="m">T</span> = ${fr(fmt(Pw*1000,3),fmt(v.dl,1))} = ${B(fmt(dT,3)+' °C')}`)}
+    </div>${dT>0.1?'<p class="note alert">El autocalentamiento supera 0,1 °C. Sube la resistencia fija, baja la alimentación o excita el divisor solo en el instante de medir.</p>':''}`;
+  }
+  ctl.fire();
+}};
+
+/* ---------- 2.1 ---------- */
+MODS.m21={unit:2,code:'2.1',title:'Calibración',nav:'Calibración',
+init(root){
+  root.innerHTML=layout({unit:2,code:'2.1',title:this.title,
+    lead:'Calibrar es comparar las lecturas del sensor con un patrón de referencia y obtener la ecuación que corrige los errores sistemáticos. El método de mínimos cuadrados da la recta que mejor se ajusta.',
+    caso:'Calibración de un transductor de presión para monitor de signos vitales, de 0 a 300 mmHg, contra un manómetro patrón. Se aplican N presiones conocidas y se anota la lectura del equipo.',
+    theory:`<p>El sensor real tiene error de <b>offset</b> (marca algo con presión cero), error de <b>ganancia</b> (pendiente distinta de 1), <b>no linealidad</b> (la curva no es recta) y <b>ruido</b>. La calibración corrige los dos primeros; la no linealidad y el ruido quedan como error residual y definen la incertidumbre.</p>
+    <p>Con los pares (patrón x<sub>i</sub>, lectura y<sub>i</sub>) se ajusta <span class="m">y = m·x + b</span>. Luego la ecuación de corrección es la inversa: <span class="m">x = (y − b)/m</span>. El coeficiente R² indica qué tan bien explica la recta los datos, pero el dato que importa en clínica es el residuo máximo.</p>
+    <p>La norma de esfigmomanómetros pide error máximo de ±3 mmHg; ese es el criterio que usa el simulador.</p>`,
+    formulas: eq(`<span class="m">m</span> = ${fr('<span class="m">N</span>Σ<span class="m">xy</span> − Σ<span class="m">x</span>Σ<span class="m">y</span>','<span class="m">N</span>Σ<span class="m">x</span>² − (Σ<span class="m">x</span>)²')}`)+
+      eq(`<span class="m">b</span> = ${fr('Σ<span class="m">y</span> − <span class="m">m</span>Σ<span class="m">x</span>','<span class="m">N</span>')}`)+
+      eq(`<span class="m">R</span>² = 1 − ${fr('Σ(<span class="m">y</span><sub>i</sub> − <span class="m">ŷ</span><sub>i</sub>)²','Σ(<span class="m">y</span><sub>i</sub> − <span class="m">ȳ</span>)²')}`)+
+      eq(`<span class="m">s</span> = ${sq(fr('Σ<span class="m">r</span><sub>i</sub>²','<span class="m">N</span> − 2'))}`,'error típico')+
+      eq(`No linealidad = ${fr('máx|<span class="m">r</span><sub>i</sub>|','FS')}·100 %`),
+    plots:[{id:'p1',cap:'Lectura del equipo vs. patrón'},{id:'p2',cap:'Residuos después de calibrar',cls:'short'}],
+    practice:[
+      ['Un equipo marca 3 mmHg a presión cero y 309 mmHg con 300 mmHg. ¿Cuál es la ecuación de corrección con dos puntos?','m = (309 − 3)/300 = 1,02; b = 3. Corrección: P = (lectura − 3)/1,02.'],
+      ['¿Por qué no basta con dos puntos?','Con dos puntos la recta pasa exactamente por ellos y no se detecta no linealidad ni ruido. Con más puntos se ven los residuos y se estima la incertidumbre.'],
+      ['R² = 0,9999 pero el residuo máximo es 4 mmHg. ¿El equipo pasa?','No. R² alto solo dice que la tendencia es recta; el error clínico de 4 mmHg supera el ±3 mmHg permitido.']]
+  });
+  const ctl=makeControls($('#ctl',root),'s21',[
+    {id:'ge',label:'Error de ganancia',min:-10,max:10,step:0.5,value:4,unit:'%',dec:1},
+    {id:'of',label:'Error de offset',min:-10,max:10,step:0.5,value:3,unit:'mmHg',dec:1},
+    {id:'nl',label:'No linealidad (curvatura)',min:0,max:3,step:0.1,value:0.8,unit:'% FS',dec:1},
+    {id:'sd',label:'Ruido σ',min:0,max:3,step:0.1,value:0.8,unit:'mmHg',dec:1},
+    {id:'N',label:'Número de puntos de calibración',min:3,max:15,step:1,value:7,dec:0}],upd);
+  function upd(v){
+    const FS=300, N=Math.round(v.N), g=gaussGen(5), xs=[],ys=[];
+    for(let i=0;i<N;i++){ const x=FS*i/(N-1), u=x/FS; xs.push(x); ys.push(x*(1+v.ge/100)+v.of+4*v.nl/100*FS*u*(1-u)+v.sd*g()); }
+    let Sx=0,Sy=0,Sxy=0,Sxx=0; for(let i=0;i<N;i++){ Sx+=xs[i];Sy+=ys[i];Sxy+=xs[i]*ys[i];Sxx+=xs[i]*xs[i]; }
+    const m=(N*Sxy-Sx*Sy)/(N*Sxx-Sx*Sx), b=(Sy-m*Sx)/N, yb=Sy/N;
+    const res=ys.map((y,i)=>y-(m*xs[i]+b)); const SSr=res.reduce((s,r)=>s+r*r,0), SSt=ys.reduce((s,y)=>s+(y-yb)**2,0);
+    const R2=1-SSr/SSt, s=N>2?Math.sqrt(SSr/(N-2)):0, rmax=Math.max(...res.map(Math.abs)), errP=res.map(r=>r/m), emax=rmax/m;
+    const lx=[0,FS];
+    P(root,'p1',{series:[{x:lx,y:lx,color:'s6',dash:[6,4],label:'ideal (lectura = patrón)'},{x:lx,y:lx.map(x=>m*x+b),color:'s1',label:'recta ajustada'}],points:xs.map((x,i)=>({x,y:ys[i],shape:'dot',color:'s2',size:4})),legend:[{color:'s2',label:'puntos medidos'}],xlabel:'presión patrón (mmHg)',ylabel:'lectura (mmHg)'});
+    P(root,'p2',{series:[{x:xs,y:errP,color:'s2',width:1.2,dash:[3,3]}],points:xs.map((x,i)=>({x,y:errP[i],shape:'dot',color:'s2',size:4})),hlines:[{y:3,color:'s4',label:'+3 mmHg'},{y:-3,color:'s4',label:'−3 mmHg'},{y:0,color:'s6'}],xlabel:'presión patrón (mmHg)',ylabel:'error corregido (mmHg)'});
+    const ok=emax<=3;
+    $('#kpis',root).innerHTML=kpi('Pendiente m',fmt(m,4))+kpi('Offset b',fmt(b,2)+' mmHg')+kpi('R²',fmt(R2,5))+kpi('Error máximo tras calibrar',fmt(emax,2)+' mmHg '+(ok?pill('ok','cumple'):pill('bad','no cumple')));
+    const rows=xs.map((x,i)=>`<tr><td class="mono">${fmt(x,1)}</td><td class="mono">${fmt(ys[i],2)}</td><td class="mono">${fmt((ys[i]-b)/m,2)}</td><td class="mono">${fmt(errP[i],2)}</td></tr>`).join('');
+    $('#calc',root).innerHTML=`<div class="steps">
+      ${step('1. Sumatorias',`Σ<span class="m">x</span> = ${fmt(Sx,1)} &nbsp; Σ<span class="m">y</span> = ${fmt(Sy,1)} &nbsp; Σ<span class="m">xy</span> = ${fmt(Sxy,0)} &nbsp; Σ<span class="m">x</span>² = ${fmt(Sxx,0)}`)}
+      ${step('2. Pendiente',`<span class="m">m</span> = ${fr(N+'·'+fmt(Sxy,0)+' − '+fmt(Sx,1)+'·'+fmt(Sy,1),N+'·'+fmt(Sxx,0)+' − '+fmt(Sx,1)+'²')} = ${B(fmt(m,5))}`)}
+      ${step('3. Intercepto',`<span class="m">b</span> = ${fr(fmt(Sy,1)+' − '+fmt(m,4)+'·'+fmt(Sx,1),String(N))} = ${B(fmt(b,3)+' mmHg')}`)}
+      ${step('4. Ecuación de corrección',`<span class="m">P</span><sub>real</sub> = ${fr('lectura − '+fmt(b,3),fmt(m,5))}`)}
+      ${step('5. Calidad del ajuste',`<span class="m">R</span>² = ${B(fmt(R2,6))} &nbsp; <span class="m">s</span> = ${B(fmt(s,3)+' mmHg')}`)}
+      ${step('6. No linealidad respecto a FS',`${fr(fmt(rmax,2),'300')}·100 = ${B(fmt(rmax/FS*100,3)+' % FS')}`)}
+    </div><div class="tbl" style="margin-top:10px"><table><tr><th>Patrón</th><th>Lectura</th><th>Lectura corregida</th><th>Error</th></tr>${rows}</table></div>`;
+  }
+  ctl.fire();
+}};
+
+/* ---------- 2.2 ---------- */
+MODS.m22={unit:2,code:'2.2',title:'Relación señal a ruido y muestreo',nav:'Relación señal a ruido',
+init(root){
+  root.innerHTML=layout({unit:2,code:'2.2',title:this.title,
+    lead:'La relación señal a ruido (SNR) compara la potencia de lo que queremos medir con la de lo que estorba. Se mejora filtrando lo que está fuera de la banda de la señal y muestreando lo bastante rápido para no crear frecuencias falsas.',
+    caso:'Electrocardiograma de un monitor contaminado por ruido muscular (blanco) y por la red eléctrica de 60 Hz. Se aplica un filtro pasa bajas y un filtro notch. En el segundo modo se ve el efecto de muestrear por debajo de Nyquist.',
+    theory:`<p>La SNR se expresa en decibelios. Con potencias: <span class="m">10·log(P<sub>s</sub>/P<sub>n</sub>)</span>; con amplitudes RMS: <span class="m">20·log(V<sub>s</sub>/V<sub>n</sub>)</span>. Cada 6 dB equivale a duplicar la relación de amplitudes.</p>
+    <p>El ruido de 60 Hz entra por acople capacitivo con la red. Se reduce con buen apantallamiento, amplificador de instrumentación con alto CMRR, pierna derecha activa y, al final, un notch. El ruido blanco se reduce con pasa bajas, pero si la frecuencia de corte es muy baja se deforma el QRS.</p>
+    <p><b>Teorema de Nyquist.</b> Para reconstruir una señal hay que muestrear a más del doble de su máxima frecuencia. Si no, aparece una frecuencia falsa (alias) en <span class="m">|f − k·f<sub>s</sub>|</span>.</p>
+    <div class="tbl"><table><tr><th>Señal</th><th>Banda útil</th><th>f<sub>s</sub> típica</th></tr><tr><td>ECG diagnóstico</td><td>0,05–150 Hz</td><td>500 Hz</td></tr><tr><td>PPG / oximetría</td><td>0,5–10 Hz</td><td>100 Hz</td></tr><tr><td>Respiración</td><td>0,1–2 Hz</td><td>25–50 Hz</td></tr><tr><td>Flujo de ventilador</td><td>0–20 Hz</td><td>100–200 Hz</td></tr><tr><td>Temperatura</td><td>&lt; 0,1 Hz</td><td>1 Hz</td></tr><tr><td>EMG</td><td>20–500 Hz</td><td>1–2 kHz</td></tr></table></div>`,
+    formulas: eq(`SNR<sub>dB</sub> = 10 log<sub>10</sub>${fr('<span class="m">P</span><sub>señal</sub>','<span class="m">P</span><sub>ruido</sub>')} = 20 log<sub>10</sub>${fr('<span class="m">V</span><sub>s,rms</sub>','<span class="m">V</span><sub>n,rms</sub>')}`)+
+      eq(`Promediar <span class="m">N</span> veces: SNR ↑ 10 log<sub>10</sub><span class="m">N</span>`)+
+      eq(`<span class="m">f</span><sub>s</sub> > 2<span class="m">f</span><sub>máx</sub>`,'Nyquist')+
+      eq(`<span class="m">f</span><sub>alias</sub> = |<span class="m">f</span> − <span class="m">k f</span><sub>s</sub>|`,'k entero más cercano a f/fs')+
+      eq(`<span class="m">H</span><sub>notch</sub>(<span class="m">z</span>) = ${fr('1 − 2cos<span class="m">ω</span><sub>0</sub><span class="m">z</span><sup>−1</sup> + <span class="m">z</span><sup>−2</sup>','1 − 2<span class="m">r</span>cos<span class="m">ω</span><sub>0</sub><span class="m">z</span><sup>−1</sup> + <span class="m">r</span>²<span class="m">z</span><sup>−2</sup>')}`),
+    plots:[{id:'p1',cap:'Señal adquirida'},{id:'p2',cap:'Señal procesada',cls:'short'}],
+    practice:[
+      ['Un ECG de 1 mV RMS tiene 0,1 mV RMS de ruido. ¿Cuál es la SNR?','20·log(1/0,1) = 20 dB.'],
+      ['Un pulso de 30 Hz se muestrea a 50 Hz. ¿Qué frecuencia aparece?','f/fs = 0,6 → k = 1. Alias = |30 − 50| = 20 Hz.'],
+      ['¿Por qué no se pone el pasa bajas en 15 Hz para limpiar más el ECG?','Porque el QRS tiene componentes hasta 40 Hz o más. Se recortaría la onda R y se alterarían mediciones del segmento ST y del QRS.']]
+  });
+  const ctl=makeControls($('#ctl',root),'s22',[
+    {type:'seg',id:'mode',label:'Modo',options:[['ecg','Ruido en el ECG'],['nyq','Muestreo y aliasing']],value:'ecg'},
+    {id:'A',label:'Amplitud de la onda R',min:0.5,max:3,step:0.1,value:1,unit:'mV',dec:1,showIf:v=>v.mode==='ecg'},
+    {id:'wn',label:'Ruido blanco σ (muscular)',min:0,max:0.3,step:0.01,value:0.08,unit:'mV',dec:2,showIf:v=>v.mode==='ecg'},
+    {id:'ln',label:'Interferencia de 60 Hz',min:0,max:1,step:0.02,value:0.3,unit:'mV',dec:2,showIf:v=>v.mode==='ecg'},
+    {id:'fc',label:'Corte del pasa bajas',min:5,max:150,step:1,value:40,unit:'Hz',dec:0,showIf:v=>v.mode==='ecg'},
+    {type:'check',id:'notch',label:'Filtro notch de 60 Hz',value:true,showIf:v=>v.mode==='ecg'},
+    {id:'f',label:'Frecuencia de la señal',min:1,max:100,step:0.5,value:30,unit:'Hz',dec:1,showIf:v=>v.mode==='nyq'},
+    {id:'fs',label:'Frecuencia de muestreo f<sub>s</sub>',min:10,max:300,step:1,value:50,unit:'Hz',dec:0,showIf:v=>v.mode==='nyq'}],upd);
+  function upd(v){
+    if(v.mode==='ecg'){
+      const fs=500, T=3, n=fs*T, RR=60/72, g=gaussGen(3), t=[],cl=[],x=[];
+      for(let i=0;i<n;i++){ const ti=i/fs; t.push(ti); const c=ecgBeat(ti%RR,v.A); cl.push(c); x.push(c+v.wn*g()+v.ln*Math.sin(2*PI*60*ti)); }
+      const proc=a=>{ let y=biquad(a,lpCoef(v.fc,fs)); if(v.notch) y=biquad(y,notchCoef(60,fs)); return y; };
+      const y=proc(x), cf=proc(cl);
+      const skip=200, sl=a=>a.slice(skip);
+      const nIn=sl(x).map((s,i)=>s-sl(cl)[i]), nOut=sl(y).map((s,i)=>s-sl(cf)[i]);
+      const snrIn=10*Math.log10(power(sl(cl))/power(nIn)), snrOut=10*Math.log10(power(sl(cf))/power(nOut));
+      const dist=Math.sqrt(power(sl(cf).map((s,i)=>s-sl(cl)[i])))/Math.sqrt(power(sl(cl)))*100;
+      const Rpk=Math.max(...sl(cf));
+      P(root,'p1',{series:[{x:t,y:x,color:'s2',width:1.2,label:'ECG con ruido'}],xlabel:'tiempo (s)',ylabel:'mV'});
+      P(root,'p2',{series:[{x:t,y:cl,color:'s6',dash:[5,4],width:1.4,label:'ECG limpio (referencia)'},{x:t,y,color:'s3',label:'después de filtrar'}],xlabel:'tiempo (s)',ylabel:'mV'});
+      $('#kpis',root).innerHTML=kpi('SNR antes',fmt(snrIn,1)+' dB')+kpi('SNR después',fmt(snrOut,1)+' dB')+kpi('Mejora',fmt(snrOut-snrIn,1)+' dB')+kpi('Pico R filtrado',fmt(Rpk,2)+' mV '+(Rpk<0.85*v.A?pill('warn','recortado'):''));
+      const ps=power(sl(cl));
+      $('#calc',root).innerHTML=`<div class="steps">
+        ${step('1. Potencia de la señal limpia',`<span class="m">P</span><sub>s</sub> = ${B(fmt(ps,4)+' mV²')} (V<sub>rms</sub> = ${fmt(Math.sqrt(ps),3)} mV)`)}
+        ${step('2. Potencia del ruido de entrada',`<span class="m">P</span><sub>n</sub> ≈ σ² + <span class="m">A</span><sub>60</sub>²/2 = ${fmt(v.wn,2)}² + ${fmt(v.ln,2)}²/2 = ${B(fmt(v.wn**2+v.ln**2/2,4)+' mV²')}`)}
+        ${step('3. SNR de entrada',`10 log(${fmt(ps,4)}/${fmt(power(nIn),4)}) = ${B(fmt(snrIn,2)+' dB')}`)}
+        ${step('4. SNR de salida',`${B(fmt(snrOut,2)+' dB')}`)}
+        ${step('5. Distorsión que introduce el filtro',`${B(fmt(dist,1)+' %')} de la señal`)}
+        ${step('6. Ruido blanco que deja pasar el pasa bajas',`≈ ${sq(fr(fmt(v.fc,0),'250'))}·σ = ${B(fmt(Math.sqrt(v.fc/250)*v.wn,3)+' mV')}`)}
+      </div><p class="note">Baja el corte del pasa bajas: la SNR sube, pero la distorsión también. Ese es el compromiso de diseño.</p>`;
+      return;
+    }
+    const T=Math.max(4/v.f,0.2), N=1500, t=[],y=[]; for(let i=0;i<=N;i++){ const ti=T*i/N; t.push(ti); y.push(Math.sin(2*PI*v.f*ti)); }
+    const ts=[],ysm=[]; for(let k=0;k*1/v.fs<=T;k++){ ts.push(k/v.fs); ysm.push(Math.sin(2*PI*v.f*k/v.fs)); }
+    const k=Math.round(v.f/v.fs), fa=Math.abs(v.f-k*v.fs), al=v.fs<2*v.f;
+    const sgn=(v.f-k*v.fs)>=0?1:-1; const ya=t.map(x=>sgn*Math.sin(2*PI*fa*x));
+    P(root,'p1',{series:[{x:t,y,color:'s6',width:1.4,label:'señal real '+fmt(v.f,1)+' Hz'},{x:ts,y:ysm,dots:true,r:3.2,color:'s2',label:'muestras'}],xlabel:'tiempo (s)',ylabel:'amplitud'});
+    P(root,'p2',{series:[{x:ts,y:ysm,color:'s2',width:1.2,dash:[3,3],label:'unir las muestras'},...(al?[{x:t,y:ya,color:'s4',label:'alias '+fmt(fa,1)+' Hz'}]:[])],xlabel:'tiempo (s)',ylabel:'amplitud'});
+    $('#kpis',root).innerHTML=kpi('f<sub>s</sub> mínima',fmt(2*v.f,1)+' Hz')+kpi('Muestras por ciclo',fmt(v.fs/v.f,2))+kpi('Frecuencia aparente',fmt(al?fa:v.f,2)+' Hz')+kpi('Estado',al?pill('bad','aliasing'):pill('ok','cumple Nyquist'));
+    $('#calc',root).innerHTML=`<div class="steps">
+      ${step('1. Frecuencia de Nyquist',`<span class="m">f</span><sub>N</sub> = <span class="m">f</span><sub>s</sub>/2 = ${B(fmt(v.fs/2,1)+' Hz')}`)}
+      ${step('2. Comparación',`<span class="m">f</span> = ${fmt(v.f,1)} Hz ${al?'>':'<'} ${fmt(v.fs/2,1)} Hz → ${B(al?'hay aliasing':'sin aliasing')}`)}
+      ${step('3. Entero más cercano',`<span class="m">k</span> = redondear(${fmt(v.f,1)}/${fmt(v.fs,0)}) = ${B(String(k))}`)}
+      ${step('4. Frecuencia alias',`|${fmt(v.f,1)} − ${k}·${fmt(v.fs,0)}| = ${B(fmt(fa,2)+' Hz')}`)}
+    </div><p class="note">En la práctica se muestrea de 5 a 10 veces la frecuencia máxima y se pone un filtro antialiasing analógico antes del ADC.</p>`;
+  }
+  ctl.fire();
+}};
+
+/* ---------- 2.3 ---------- */
+MODS.m23={unit:2,code:'2.3',title:'Sensibilidad e histéresis',nav:'Sensibilidad e histéresis',
+init(root){
+  root.innerHTML=layout({unit:2,code:'2.3',title:this.title,
+    lead:'La sensibilidad es la pendiente de la curva de salida. La histéresis es la diferencia entre la salida cuando la carga sube y cuando baja: el sensor “recuerda” de dónde viene.',
+    caso:'Sensor de fuerza resistivo (FSR) en una plantilla o cuellera para detectar postura, como en los proyectos de la asignatura. Se aplica un ciclo de carga de 0 al máximo y se devuelve a cero. Los polímeros de los FSR tienen histéresis notable.',
+    theory:`<ul><li><b>Sensibilidad:</b> <span class="m">S = Δy/Δx</span>. En sensores no lineales cambia según el punto de operación; se reporta la pendiente media o la local.</li>
+    <li><b>Histéresis:</b> diferencia máxima entre las curvas de subida y bajada, en porcentaje del fondo de escala. Viene de fricción interna, viscoelasticidad o efectos magnéticos.</li>
+    <li><b>No linealidad:</b> desviación máxima respecto a la recta que une los extremos.</li>
+    <li><b>Umbral o zona muerta:</b> menor entrada que produce salida.</li></ul>
+    <p>Para estimar la fuerza a partir del voltaje se usa una sola curva. Si el sensor tiene histéresis, la misma salida corresponde a dos fuerzas distintas y el error depende de si la carga venía subiendo o bajando.</p>`,
+    formulas: eq(`<span class="m">S</span> = ${fr('Δ<span class="m">V</span>','Δ<span class="m">F</span>')} &nbsp; (mV/N)`)+
+      eq(`<span class="m">H</span>% = ${fr('máx|<span class="m">V</span><sub>bajada</sub> − <span class="m">V</span><sub>subida</sub>|','<span class="m">V</span><sub>FS</sub>')}·100`)+
+      eq(`NL% = ${fr('máx|<span class="m">V</span> − <span class="m">V</span><sub>recta</sub>|','<span class="m">V</span><sub>FS</sub>')}·100`)+
+      eq(`Error en fuerza = ${fr('<span class="m">H</span>%·<span class="m">F</span><sub>máx</sub>','100')}`),
+    plots:[{id:'p1',cap:'Ciclo de carga y descarga'},{id:'p2',cap:'Error al convertir voltaje en fuerza',cls:'short'}],
+    practice:[
+      ['Un FSR entrega 2,0 V a 100 N. ¿Cuál es su sensibilidad media?','S = 2000 mV/100 N = 20 mV/N.'],
+      ['Si la histéresis es 6 % FS en un sensor de 100 N, ¿qué incertidumbre aporta?','Hasta 6 N de diferencia entre subida y bajada; ±3 N si se calibra con la curva promedio.'],
+      ['¿Cómo se reduce el efecto de la histéresis en un dispositivo de postura?','Calibrando con el promedio de las dos curvas, usando umbrales con banda (histéresis en el software) y eligiendo celdas de carga metálicas si se necesita exactitud.']]
+  });
+  const ctl=makeControls($('#ctl',root),'s23',[
+    {id:'Fm',label:'Fuerza máxima',min:10,max:200,step:5,value:100,unit:'N',dec:0},
+    {id:'S',label:'Sensibilidad nominal',min:1,max:50,step:1,value:20,unit:'mV/N',dec:0},
+    {id:'H',label:'Histéresis',min:0,max:15,step:0.5,value:6,unit:'% FS',dec:1},
+    {id:'NL',label:'No linealidad',min:0,max:10,step:0.5,value:3,unit:'% FS',dec:1},
+    {id:'dz',label:'Zona muerta',min:0,max:10,step:0.5,value:2,unit:'N',dec:1}],upd);
+  function upd(v){
+    const VFS=v.S*v.Fm; const base=F=>{ const x=Math.max(0,(F-v.dz)/(v.Fm-v.dz)); return x+4*v.NL/100*x*(1-x); };
+    const up=F=>{ const x=F/v.Fm; return VFS*(base(F)-2*v.H/100*x*(1-x)); }, dn=F=>{ const x=F/v.Fm; return VFS*(base(F)+2*v.H/100*x*(1-x)); };
+    const F=[],U=[],Dn=[],I=[]; for(let i=0;i<=300;i++){ const f=v.Fm*i/300; F.push(f); U.push(up(f)/1000); Dn.push(dn(f)/1000); I.push(v.S*f/1000); }
+    P(root,'p1',{series:[{x:F,y:I,color:'s6',dash:[6,4],label:'ideal'},{x:F,y:U,color:'s1',label:'carga (subiendo)'},{x:F,y:Dn,color:'s2',label:'descarga (bajando)'}],xlabel:'fuerza (N)',ylabel:'voltaje (V)'});
+    const avg=f=>(up(f)+dn(f))/2, inv=V=>{ let a=0,b=v.Fm; for(let k=0;k<50;k++){ const c=(a+b)/2; if(avg(c)<V) a=c; else b=c; } return (a+b)/2; };
+    const eu=F.map(f=>inv(up(f))-f), ed=F.map(f=>inv(dn(f))-f);
+    P(root,'p2',{series:[{x:F,y:eu,color:'s1',label:'subiendo'},{x:F,y:ed,color:'s2',label:'bajando'}],axes0:true,xlabel:'fuerza real (N)',ylabel:'error (N)'});
+    let hmax=0,nlmax=0; F.forEach((f,i)=>{ hmax=Math.max(hmax,Math.abs(Dn[i]-U[i])); nlmax=Math.max(nlmax,Math.abs(avg(f)/1000-(avg(v.Fm)/1000)*f/v.Fm)); });
+    const Sm=avg(v.Fm)/v.Fm, Sl=(avg(v.Fm*0.55)-avg(v.Fm*0.45))/(0.1*v.Fm);
+    const emax=Math.max(...eu.map(Math.abs),...ed.map(Math.abs));
+    $('#kpis',root).innerHTML=kpi('Sensibilidad media',fmt(Sm,2)+' mV/N')+kpi('Histéresis',fmt(hmax/(VFS/1000)*100,2)+' % FS')+kpi('No linealidad',fmt(nlmax/(VFS/1000)*100,2)+' % FS')+kpi('Error máximo en fuerza',fmt(emax,2)+' N');
+    $('#calc',root).innerHTML=`<div class="steps">
+      ${step('1. Salida a fondo de escala',`<span class="m">V</span><sub>FS</sub> = ${fmt(v.S,0)} mV/N·${fmt(v.Fm,0)} N = ${B(fmt(VFS/1000,2)+' V')}`)}
+      ${step('2. Sensibilidad media (extremos)',`<span class="m">S</span> = ${fr(fmt(avg(v.Fm),0)+' mV',fmt(v.Fm,0)+' N')} = ${B(fmt(Sm,2)+' mV/N')}`)}
+      ${step('3. Sensibilidad local a media escala',`<span class="m">S</span><sub>50%</sub> = ${B(fmt(Sl,2)+' mV/N')}`)}
+      ${step('4. Histéresis máxima',`${fr(fmt(hmax*1000,1)+' mV',fmt(VFS,0)+' mV')}·100 = ${B(fmt(hmax/(VFS/1000)*100,2)+' % FS')}`)}
+      ${step('5. Equivalente en fuerza',`${fr(fmt(hmax*1000,1)+' mV',fmt(Sm,2)+' mV/N')} = ${B(fmt(hmax*1000/Sm,2)+' N')}`)}
+      ${step('6. Umbral',`no hay salida por debajo de ${B(fmt(v.dz,1)+' N')}`)}
+    </div>`;
+  }
+  ctl.fire();
+}};
+
+/* ---------- 3.1 ---------- */
+MODS.m31={unit:3,code:'3.1',title:'Aplicación con acelerómetros',nav:'Aplicación con acelerómetros',
+init(root){
+  root.innerHTML=layout({unit:3,code:'3.1',title:this.title,
+    lead:'En reposo, un acelerómetro mide la gravedad. Repartida entre sus ejes, la gravedad dice cuánto está inclinado el sensor. Cuando hay movimiento, la aceleración propia del cuerpo se suma y ensucia la estimación.',
+    caso:'Dispositivo cervical que alerta cuando la flexión del cuello supera un umbral durante mucho tiempo (postura de celular). El acelerómetro va en la nuca, eje x hacia adelante y eje z hacia arriba. La cabeza rota con radio de unos 15 cm respecto a C7.',
+    theory:`<p>Con el sensor quieto, <span class="m">a<sub>x</sub> = g·sen θ</span> y <span class="m">a<sub>z</sub> = g·cos θ</span>. El ángulo se recupera con <span class="m">atan2</span>, que funciona en los cuatro cuadrantes y no depende de la magnitud exacta de g.</p>
+    <p>Al mover la cabeza aparecen la aceleración tangencial <span class="m">r·θ̈</span> y la centrípeta <span class="m">r·θ̇²</span>. Si el movimiento es rápido, el ángulo calculado se equivoca. Un filtro pasa bajas exponencial (EMA) lo suaviza, pero agrega retardo. En dispositivos reales se combina con un giroscopio (filtro complementario o de Kalman).</p>
+    <p>La salida digital viene en cuentas (LSB). Un MPU-6050 en ±2 g entrega 16 384 LSB/g.</p>`,
+    formulas: eq(`<span class="m">θ</span> = atan2(<span class="m">a</span><sub>x</sub>, <span class="m">a</span><sub>z</sub>)`)+
+      eq(`<span class="m">θ</span><sub>pitch</sub> = atan${fr('<span class="m">a</span><sub>x</sub>',sq('<span class="m">a</span><sub>y</sub>² + <span class="m">a</span><sub>z</sub>²'))}`,'3 ejes')+
+      eq(`<span class="m">a</span><sub>t</sub> = <span class="m">r θ̈</span> &nbsp; <span class="m">a</span><sub>c</sub> = <span class="m">r θ̇</span>²`)+
+      eq(`<span class="m">y</span><sub>k</sub> = <span class="m">α x</span><sub>k</sub> + (1 − <span class="m">α</span>)<span class="m">y</span><sub>k−1</sub>`,'EMA')+
+      eq(`<span class="m">τ</span> ≈ <span class="m">T</span><sub>s</sub>${fr('1 − <span class="m">α</span>','<span class="m">α</span>')}`,'retardo del filtro')+
+      eq(`<span class="m">S</span> = ${fr('2<sup>15</sup>','rango (g)')} LSB/g`),
+    plots:[{id:'p1',cap:'Ángulo de flexión cervical'},{id:'p2',cap:'Aceleraciones medidas',cls:'short'}],
+    practice:[
+      ['El sensor lee a<sub>x</sub> = 0,5 g y a<sub>z</sub> = 0,866 g. ¿Cuál es la flexión?','θ = atan2(0,5; 0,866) = 30°.'],
+      ['Con ±2 g y 16 bits, ¿qué resolución angular hay cerca de 0°?','1 LSB = 1/16384 g = 6,1×10⁻⁵ g ≈ 6,1×10⁻⁵ rad = 0,0035°. El límite real lo pone el ruido, no la resolución.'],
+      ['Con fs = 50 Hz y α = 0,1, ¿cuánto retardo agrega el filtro?','τ = 0,02·0,9/0,1 = 0,18 s. Para una alarma de postura es aceptable; para un sistema de caídas, no.']]
+  });
+  const ctl=makeControls($('#ctl',root),'s31',[
+    {id:'A',label:'Flexión máxima del cuello',min:5,max:60,step:1,value:35,unit:'°',dec:0},
+    {id:'f',label:'Velocidad del movimiento',min:0.05,max:2,step:0.05,value:0.3,unit:'Hz',dec:2},
+    {id:'nz',label:'Ruido del sensor',min:0,max:0.1,step:0.005,value:0.03,unit:'g',dec:3},
+    {id:'al',label:'Coeficiente del filtro α',min:0.01,max:1,step:0.01,value:0.1,dec:2},
+    {id:'th',label:'Umbral de alerta',min:10,max:45,step:1,value:25,unit:'°',dec:0},
+    {type:'seg',id:'rg',label:'Rango del acelerómetro',options:[['2','±2 g'],['4','±4 g'],['8','±8 g']],value:'2'}],upd);
+  function upd(v){
+    const fs=50, T=Math.max(3/v.f,6), n=Math.round(T*fs), r=0.15, g0=9.81, Ar=v.A*PI/180, w=2*PI*v.f, gn=gaussGen(9), S=32768/+v.rg;
+    const t=[],th=[],raw=[],flt=[],ax=[],az=[]; let y=0, above=0;
+    for(let i=0;i<=n;i++){ const ti=i/fs; const q=Ar*(1-Math.cos(w*ti))/2, qd=Ar*w*Math.sin(w*ti)/2, qdd=Ar*w*w*Math.cos(w*ti)/2;
+      const at=r*qdd/g0, ac=r*qd*qd/g0;
+      let gx=Math.sin(q)+at*Math.cos(q)-ac*Math.sin(q)+v.nz*gn(), gz=Math.cos(q)-at*Math.sin(q)-ac*Math.cos(q)+v.nz*gn();
+      gx=Math.round(clamp(gx,-+v.rg,+v.rg)*S)/S; gz=Math.round(clamp(gz,-+v.rg,+v.rg)*S)/S;
+      const e=Math.atan2(gx,gz)*180/PI; y=i?v.al*e+(1-v.al)*y:e;
+      t.push(ti); th.push(q*180/PI); raw.push(e); flt.push(y); ax.push(gx); az.push(gz); if(y>v.th) above++; }
+    const err=flt.map((x,i)=>x-th[i]), emax=Math.max(...err.map(Math.abs)), rawE=Math.max(...raw.map((x,i)=>Math.abs(x-th[i])));
+    P(root,'p1',{series:[{x:t,y:raw,color:'s6',width:1,label:'estimado sin filtrar'},{x:t,y:th,color:'s3',dash:[6,4],label:'ángulo real'},{x:t,y:flt,color:'s2',label:'estimado filtrado'}],hlines:[{y:v.th,color:'s4',label:'umbral'}],xlabel:'tiempo (s)',ylabel:'grados'});
+    P(root,'p2',{series:[{x:t,y:ax,color:'s1',label:'a_x (g)'},{x:t,y:az,color:'s4',label:'a_z (g)'}],xlabel:'tiempo (s)',ylabel:'g'});
+    const tau=(1/fs)*(1-v.al)/v.al;
+    $('#kpis',root).innerHTML=kpi('Error máx. sin filtro',fmt(rawE,1)+'°')+kpi('Error máx. filtrado',fmt(emax,1)+'°')+kpi('Retardo del filtro',fmt(tau,2)+' s')+kpi('Tiempo sobre el umbral',fmt(above/(n+1)*100,0)+' %');
+    const amax=r*Ar*w*w/2/g0;
+    $('#calc',root).innerHTML=`<div class="steps">
+      ${step('1. Lectura en reposo a la flexión máxima',`<span class="m">a</span><sub>x</sub> = sen ${fmt(v.A,0)}° = ${B(fmt(Math.sin(Ar),4)+' g')} &nbsp; <span class="m">a</span><sub>z</sub> = ${B(fmt(Math.cos(Ar),4)+' g')}`)}
+      ${step('2. Ángulo recuperado',`atan2(${fmt(Math.sin(Ar),3)}; ${fmt(Math.cos(Ar),3)}) = ${B(fmt(v.A,1)+'°')}`)}
+      ${step('3. Aceleración tangencial máxima',`<span class="m">a</span><sub>t</sub> = <span class="m">r</span>·<span class="m">A</span>·<span class="m">ω</span>²/2 = 0,15·${fmt(Ar,3)}·${fmt(w,2)}²/2 = ${B(fmt(amax*g0,3)+' m/s² = '+fmt(amax,4)+' g')}`)}
+      ${step('4. Sensibilidad digital',`<span class="m">S</span> = ${fr('32768',v.rg)} = ${B(fmt(S,0)+' LSB/g')}`)}
+      ${step('5. Cuentas en a<sub>x</sub> a la flexión máxima',`${fmt(Math.sin(Ar),4)}·${fmt(S,0)} = ${B(fmt(Math.round(Math.sin(Ar)*S),0)+' LSB')}`)}
+      ${step('6. Retardo del filtro EMA',`<span class="m">τ</span> = 0,02·${fr(fmt(1-v.al,2),fmt(v.al,2))} = ${B(fmt(tau,3)+' s')}`)}
+    </div>`;
+  }
+  ctl.fire();
+}};
+
+/* ---------- 3.2 ---------- */
+MODS.m32={unit:3,code:'3.2',title:'Aplicación con sensores de flujo',nav:'Aplicación con sensores de flujo',
+init(root){
+  root.innerHTML=layout({unit:3,code:'3.2',title:this.title,
+    lead:'Los sensores de flujo de aire más usados en equipos respiratorios miden una caída de presión (Venturi, orificio, neumotacógrafo) o el enfriamiento de un elemento caliente (anemómetro de hilo caliente).',
+    caso:'Rama espiratoria de un ventilador mecánico o espirómetro, tubo de 22 mm. Se comparan tres principios: Venturi (ΔP proporcional a Q²), hilo caliente (ley de King) y neumotacógrafo de Fleisch (ΔP proporcional a Q mientras el flujo sea laminar).',
+    theory:`<p><b>Venturi u orificio.</b> Por Bernoulli, al estrecharse el tubo la velocidad sube y la presión baja. La diferencia de presión crece con el cuadrado del caudal, así que a flujos bajos la señal es casi nula y la resolución es mala.</p>
+    <p><b>Hilo caliente.</b> Un filamento se mantiene a temperatura constante; el aire que pasa lo enfría y el circuito necesita más voltaje. La ley de King relaciona voltaje y velocidad. Responde rápido y mide flujos bajos, pero depende de la temperatura y composición del gas.</p>
+    <p><b>Neumotacógrafo.</b> Una malla o capilares crean una resistencia lineal mientras el número de Reynolds sea bajo (flujo laminar, Re &lt; 2000). A flujos altos aparece un término cuadrático y se pierde la linealidad.</p>`,
+    formulas: eq(`<span class="m">Q</span> = <span class="m">C</span><sub>d</sub><span class="m">A</span><sub>2</sub>${sq(fr('2Δ<span class="m">P</span>','<span class="m">ρ</span>(1 − <span class="m">β</span>⁴)'))}, &nbsp; <span class="m">β</span> = ${fr('<span class="m">D</span><sub>2</sub>','<span class="m">D</span><sub>1</sub>')}`,'Venturi')+
+      eq(`<span class="m">E</span>² = <span class="m">A</span> + <span class="m">B·U</span><sup><span class="m">n</span></sup>`,'King, n ≈ 0,5')+
+      eq(`Δ<span class="m">P</span> = <span class="m">R·Q</span> + <span class="m">k·Q</span>²`,'neumotacógrafo')+
+      eq(`<span class="m">Re</span> = ${fr('<span class="m">ρ v D</span>','<span class="m">μ</span>')}`,'aire: ρ = 1,2 kg/m³, μ = 1,8×10⁻⁵ Pa·s')+
+      eq(`<span class="m">v</span> = ${fr('<span class="m">Q</span>','<span class="m">A</span>')}`),
+    plots:[{id:'p1',cap:'Curva del sensor'}],
+    practice:[
+      ['En un Venturi, si el flujo se duplica, ¿qué pasa con ΔP?','Se multiplica por 4, porque ΔP ∝ Q².'],
+      ['60 L/min en un tubo de 22 mm: ¿flujo laminar o turbulento?','A = 3,8×10⁻⁴ m², v = 2,63 m/s, Re = 1,2·2,63·0,022/1,8×10⁻⁵ ≈ 3860. Turbulento: por eso el neumotacógrafo usa capilares de diámetro pequeño.'],
+      ['¿Por qué el hilo caliente necesita compensación de temperatura?','Porque mide pérdida de calor, que depende de la diferencia entre el filamento y el gas. Si el gas espirado está más caliente, el sensor marcaría menos flujo.']]
+  });
+  const ctl=makeControls($('#ctl',root),'s32',[
+    {type:'seg',id:'mode',label:'Principio',options:[['ven','Venturi'],['hw','Hilo caliente'],['pn','Neumotacógrafo']],value:'ven'},
+    {id:'Q',label:'Flujo',min:0,max:200,step:1,value:60,unit:'L/min',dec:0},
+    {id:'D1',label:'Diámetro del tubo D₁',min:10,max:40,step:1,value:22,unit:'mm',dec:0,showIf:v=>v.mode==='ven'},
+    {id:'D2',label:'Diámetro de la garganta D₂',min:4,max:20,step:0.5,value:10,unit:'mm',dec:1,showIf:v=>v.mode==='ven'},
+    {id:'A',label:'Constante A de King',min:0.5,max:5,step:0.1,value:2,unit:'V²',dec:1,showIf:v=>v.mode==='hw'},
+    {id:'B',label:'Constante B de King',min:0.3,max:3,step:0.1,value:1.4,dec:1,showIf:v=>v.mode==='hw'},
+    {id:'R',label:'Resistencia lineal R',min:0.5,max:5,step:0.1,value:1.5,unit:'cmH₂O/(L/s)',dec:1,showIf:v=>v.mode==='pn'},
+    {id:'k',label:'Término turbulento k',min:0,max:1,step:0.02,value:0.2,unit:'cmH₂O/(L/s)²',dec:2,showIf:v=>v.mode==='pn'}],upd);
+  function upd(v){
+    const rho=1.2, mu=1.8e-5, Qs=v.Q/60000, Dt=(v.mode==='ven'?v.D1:22)/1000, At=PI*Dt*Dt/4, vel=Qs/At, Re=rho*vel*Dt/mu;
+    const xs=[],ys=[],lin=[];
+    if(v.mode==='ven'){
+      if(v.D2>=v.D1){ $('#calc',root).innerHTML='<p class="note alert">La garganta debe ser más angosta que el tubo.</p>'; return; }
+      const A2=PI*(v.D2/1000)**2/4, be=v.D2/v.D1, Cd=0.98, dP=Q=>{ const q=Q/60000; return (rho/2)*(q/(Cd*A2))**2*(1-be**4); };
+      for(let i=0;i<=300;i++){ const Q=200*i/300; xs.push(Q); ys.push(dP(Q)); }
+      const p0=dP(v.Q), sens=(dP(v.Q+0.5)-dP(Math.max(0,v.Q-0.5)))/(v.Q>0.5?1:0.5), s10=(dP(10.5)-dP(9.5));
+      P(root,'p1',{series:[{x:xs,y:ys,color:'s1',label:'ΔP (Pa)'}],points:[{x:v.Q,y:p0,color:'s2',text:fmt(p0,1)+' Pa'}],xlabel:'flujo (L/min)',ylabel:'ΔP (Pa)',yzero:true});
+      $('#kpis',root).innerHTML=kpi('ΔP',fmt(p0,2)+' Pa ('+fmt(p0/98.07,3)+' cmH₂O)')+kpi('Sensibilidad aquí',fmt(sens,3)+' Pa/(L/min)')+kpi('Sensibilidad a 10 L/min',fmt(s10,3)+' Pa/(L/min)')+kpi('Reynolds en el tubo',fmt(Re,0)+' '+(Re<2000?pill('ok','laminar'):pill('warn','turbulento')));
+      $('#calc',root).innerHTML=`<div class="steps">
+        ${step('1. Caudal en m³/s',`<span class="m">Q</span> = ${fmt(v.Q,0)}/60000 = ${B(sci(Qs,3)+' m³/s')}`)}
+        ${step('2. Área de la garganta y β',`<span class="m">A</span><sub>2</sub> = π(${fmt(v.D2,1)} mm)²/4 = ${B(sci(A2,3)+' m²')} &nbsp; <span class="m">β</span> = ${B(fmt(be,3))}`)}
+        ${step('3. Velocidad en la garganta',`<span class="m">v</span><sub>2</sub> = ${fr('<span class="m">Q</span>','<span class="m">C</span><sub>d</sub><span class="m">A</span><sub>2</sub>')} = ${B(fmt(Qs/(Cd*A2),2)+' m/s')}`)}
+        ${step('4. Caída de presión',`Δ<span class="m">P</span> = ${fr('1,2','2')}·${fmt(Qs/(Cd*A2),2)}²·(1 − ${fmt(be,3)}⁴) = ${B(fmt(p0,2)+' Pa')}`)}
+        ${step('5. Relación de sensibilidades',`a ${fmt(v.Q,0)} L/min es ${B(fmt(s10>0?sens/s10:0,1)+' veces')} la de 10 L/min`)}
+      </div><p class="note">Un Venturi necesita un sensor de presión diferencial muy sensible para flujos bajos. Por eso los espirómetros de Venturi a veces usan dos sensores de distinto rango.</p>`;
+    } else if(v.mode==='hw'){
+      const n=0.5, E=U=>Math.sqrt(v.A+v.B*Math.pow(U,n));
+      for(let i=0;i<=300;i++){ const Q=200*i/300, U=Q/60000/At; xs.push(Q); ys.push(E(U)); }
+      const e0=E(vel), dEdU=v.B*n*Math.pow(Math.max(vel,1e-3),n-1)/(2*e0);
+      P(root,'p1',{series:[{x:xs,y:ys,color:'s1',label:'E (V)'}],points:[{x:v.Q,y:e0,color:'s2',text:fmt(e0,3)+' V'}],xlabel:'flujo (L/min)',ylabel:'voltaje del puente (V)'});
+      $('#kpis',root).innerHTML=kpi('Velocidad del aire',fmt(vel,2)+' m/s')+kpi('Voltaje',fmt(e0,3)+' V')+kpi('Sensibilidad dE/dU',fmt(dEdU*1000,1)+' mV/(m/s)')+kpi('Voltaje a flujo cero',fmt(Math.sqrt(v.A),3)+' V');
+      $('#calc',root).innerHTML=`<div class="steps">
+        ${step('1. Velocidad en el tubo de 22 mm',`<span class="m">v</span> = ${fr(sci(Qs,3),sci(At,3))} = ${B(fmt(vel,3)+' m/s')}`)}
+        ${step('2. Ley de King',`<span class="m">E</span> = √(${fmt(v.A,1)} + ${fmt(v.B,1)}·${fmt(vel,2)}<sup>0,5</sup>) = ${B(fmt(e0,4)+' V')}`)}
+        ${step('3. Sensibilidad',`${fr('d<span class="m">E</span>','d<span class="m">U</span>')} = ${fr('<span class="m">nB U</span><sup>n−1</sup>','2<span class="m">E</span>')} = ${B(fmt(dEdU,4)+' V/(m/s)')}`)}
+        ${step('4. Inversión para obtener la velocidad',`<span class="m">U</span> = (${fr('<span class="m">E</span>² − <span class="m">A</span>','<span class="m">B</span>')})<sup>1/n</sup> = ${B(fmt(Math.pow((e0*e0-v.A)/v.B,1/n),3)+' m/s')}`)}
+      </div><p class="note">Al contrario del Venturi, el hilo caliente es más sensible a flujos bajos.</p>`;
+    } else {
+      const dP=Q=>{ const q=Q/60; return v.R*q+v.k*q*q; };
+      for(let i=0;i<=300;i++){ const Q=200*i/300; xs.push(Q); ys.push(dP(Q)); lin.push(v.R*Q/60); }
+      const p0=dP(v.Q), pl=v.R*v.Q/60, err=p0>0?(p0-pl)/pl*100:0;
+      P(root,'p1',{series:[{x:xs,y:lin,color:'s6',dash:[6,4],label:'solo término lineal'},{x:xs,y:ys,color:'s1',label:'ΔP real'}],points:[{x:v.Q,y:p0,color:'s2',text:fmt(p0,2)+' cmH₂O'}],xlabel:'flujo (L/min)',ylabel:'ΔP (cmH₂O)',yzero:true});
+      $('#kpis',root).innerHTML=kpi('ΔP',fmt(p0,3)+' cmH₂O')+kpi('Error si se asume lineal',fmt(err,1)+' %')+kpi('Reynolds en el tubo',fmt(Re,0))+kpi('Régimen',Re<2000?pill('ok','laminar'):pill('warn','turbulento'));
+      $('#calc',root).innerHTML=`<div class="steps">
+        ${step('1. Flujo en L/s',`<span class="m">Q</span> = ${fmt(v.Q,0)}/60 = ${B(fmt(v.Q/60,3)+' L/s')}`)}
+        ${step('2. Caída de presión',`Δ<span class="m">P</span> = ${fmt(v.R,1)}·${fmt(v.Q/60,3)} + ${fmt(v.k,2)}·${fmt(v.Q/60,3)}² = ${B(fmt(p0,3)+' cmH₂O')}`)}
+        ${step('3. Flujo que se calcularía asumiendo linealidad',`<span class="m">Q</span> = Δ<span class="m">P</span>/<span class="m">R</span> = ${B(fmt(p0/v.R*60,1)+' L/min')}`)}
+        ${step('4. Número de Reynolds',`<span class="m">Re</span> = ${fr('1,2·'+fmt(vel,2)+'·0,022','1,8×10<sup>−5</sup>')} = ${B(fmt(Re,0))}`)}
+      </div>`;
+    }
+  }
+  ctl.fire();
+}};
+
+/* ---------- 3.3 ---------- */
+MODS.m33={unit:3,code:'3.3',title:'Sensores de fuerza y transductores',nav:'Fuerza y transductores (automóviles)',
+init(root){
+  root.innerHTML=layout({unit:3,code:'3.3',title:this.title,
+    lead:'Las galgas extensiométricas cambian su resistencia al deformarse y se leen con un puente de Wheatstone. Los piezoeléctricos generan carga cuando se les aplica fuerza, pero solo detectan cambios: la carga se fuga con el tiempo.',
+    caso:'Dos aplicaciones de la industria automotriz que pasaron a la biomédica. (a) Celda de carga con galgas en el asiento del vehículo para detectar ocupante y decidir si dispara el airbag; la misma celda se usa en plataformas de fuerza y básculas clínicas. (b) Sensor piezoeléctrico de impacto, usado también para detectar pulso o caídas.',
+    theory:`<p><b>Galga.</b> El cambio relativo de resistencia es el factor de galga por la deformación unitaria. Con deformaciones de cientos de microdeformaciones (µε) los cambios son de décimas de ohmio, por eso se usa el puente y un amplificador de instrumentación. Configuraciones: cuarto de puente (1 galga activa, algo no lineal), medio puente (2 galgas) y puente completo (4 galgas, el doble de sensible que el medio y compensa temperatura).</p>
+    <p><b>Viga en voladizo.</b> La deformación en la raíz es <span class="m">ε = 6FL/(E b h²)</span>. Hay que revisar que el esfuerzo no pase el límite elástico del material.</p>
+    <p><b>Piezoeléctrico.</b> Genera <span class="m">q = d<sub>33</sub>F</span>. Con su capacitancia y la resistencia de entrada forma un pasa altas de constante <span class="m">τ = RC</span>. Una fuerza constante produce un pico que luego decae a cero.</p>`,
+    formulas: eq(`${fr('Δ<span class="m">R</span>','<span class="m">R</span>')} = <span class="m">GF·ε</span>`)+
+      eq(`<span class="m">ε</span> = ${fr('6<span class="m">FL</span>','<span class="m">E b h</span>²')}`,'viga en voladizo')+
+      eq(`¼: <span class="m">V</span><sub>o</sub> = <span class="m">V</span><sub>ex</sub>${fr('<span class="m">GFε</span>','4 + 2<span class="m">GFε</span>')} &nbsp; ½: <span class="m">V</span><sub>ex</sub>${fr('<span class="m">GFε</span>','2')} &nbsp; 1: <span class="m">V</span><sub>ex</sub><span class="m">GFε</span>`)+
+      eq(`<span class="m">q</span> = <span class="m">d</span><sub>33</sub><span class="m">F</span> &nbsp; <span class="m">V</span><sub>0</sub> = ${fr('<span class="m">q</span>','<span class="m">C</span>')}`)+
+      eq(`<span class="m">V</span>(<span class="m">t</span>) = <span class="m">V</span><sub>0</sub>e<sup>−<span class="m">t</span>/<span class="m">RC</span></sup>`),
+    plots:[{id:'p1',cap:'Salida del transductor'}],
+    practice:[
+      ['GF = 2,1 y ε = 500 µε en cuarto de puente con 5 V. ¿Cuánto vale la salida?','V ≈ 5·2,1·500×10⁻⁶/4 = 1,31 mV. Con ganancia 200 se obtienen 262 mV.'],
+      ['¿Por qué el puente completo compensa la temperatura?','Porque las cuatro galgas cambian igual con la temperatura y esos cambios se cancelan; solo la flexión produce desbalance.'],
+      ['Un piezo con C = 1 nF y R = 10 MΩ. ¿Cuánto dura la señal de una fuerza sostenida?','τ = 10 ms. A los 50 ms ya cayó a menos del 1 %. No sirve para pesar a un ocupante, sí para detectar un choque.']]
+  });
+  const ctl=makeControls($('#ctl',root),'s33',[
+    {type:'seg',id:'mode',label:'Sensor',options:[['g','Galga (celda de carga)'],['pz','Piezoeléctrico']],value:'g'},
+    {id:'F',label:'Fuerza aplicada',min:0,max:1500,step:10,value:400,unit:'N',dec:0,showIf:v=>v.mode==='g'},
+    {id:'L',label:'Longitud de la viga L',min:5,max:30,step:0.5,value:10,unit:'cm',dec:1,showIf:v=>v.mode==='g'},
+    {id:'b',label:'Ancho b',min:1,max:5,step:0.1,value:2.5,unit:'cm',dec:1,showIf:v=>v.mode==='g'},
+    {id:'h',label:'Espesor h',min:3,max:15,step:0.5,value:8,unit:'mm',dec:1,showIf:v=>v.mode==='g'},
+    {id:'GF',label:'Factor de galga',min:1.8,max:2.2,step:0.01,value:2.1,dec:2,showIf:v=>v.mode==='g'},
+    {type:'seg',id:'br',label:'Puente',options:[['q','¼'],['h','½'],['f','Completo']],value:'q',showIf:v=>v.mode==='g'},
+    {id:'Vex',label:'Excitación',min:2.5,max:10,step:0.5,value:5,unit:'V',dec:1,showIf:v=>v.mode==='g'},
+    {id:'G',label:'Ganancia del amplificador',min:1,max:1000,value:200,log:true,showIf:v=>v.mode==='g'},
+    {id:'d',label:'Coeficiente d₃₃',min:20,max:500,step:5,value:300,unit:'pC/N',dec:0,showIf:v=>v.mode==='pz'},
+    {id:'C',label:'Capacitancia C',min:100,max:5000,step:50,value:1000,unit:'pF',dec:0,showIf:v=>v.mode==='pz'},
+    {id:'R',label:'Resistencia de entrada R',min:1,max:1000,value:10,log:true,unit:'MΩ',showIf:v=>v.mode==='pz'},
+    {id:'Fp',label:'Fuerza del impacto',min:1,max:100,step:1,value:20,unit:'N',dec:0,showIf:v=>v.mode==='pz'},
+    {id:'tp',label:'Duración de la fuerza',min:1,max:500,step:1,value:100,unit:'ms',dec:0,showIf:v=>v.mode==='pz'}],upd);
+  function upd(v){
+    if(v.mode==='g'){
+      const E=70e9, L=v.L/100, b=v.b/100, h=v.h/1000, eps=F=>6*F*L/(E*b*h*h);
+      const Vb=e=>{ const x=v.GF*e; return v.br==='q'?v.Vex*x/(4+2*x):v.br==='h'?v.Vex*x/2:v.Vex*x; };
+      const Vl=e=>{ const x=v.GF*e; return v.br==='q'?v.Vex*x/4:v.br==='h'?v.Vex*x/2:v.Vex*x; };
+      const xs=[],ys=[],yl=[]; for(let i=0;i<=200;i++){ const F=1500*i/200; xs.push(F); ys.push(Vb(eps(F))*v.G); yl.push(Vl(eps(F))*v.G); }
+      const e0=eps(v.F), vb=Vb(e0), vo=vb*v.G, sig=E*e0/1e6, nl=e0>0?(Vl(e0)-vb)/vb*100:0;
+      P(root,'p1',{series:[{x:xs,y:yl,color:'s6',dash:[6,4],label:'aproximación lineal'},{x:xs,y:ys,color:'s1',label:'salida amplificada (V)'}],points:[{x:v.F,y:vo,color:'s2',text:fmt(vo,3)+' V'}],hlines:[{y:5,color:'s2',dash:[2,3],label:'límite del ADC 5 V'}],xlabel:'fuerza (N)',ylabel:'voltaje (V)',yzero:true});
+      $('#kpis',root).innerHTML=kpi('Deformación',fmt(e0*1e6,1)+' µε')+kpi('Salida del puente',fmt(vb*1000,3)+' mV')+kpi('Salida amplificada',fmt(vo,3)+' V')+kpi('Esfuerzo en la viga',fmt(sig,1)+' MPa '+(sig>270?pill('bad','> límite'):''));
+      $('#calc',root).innerHTML=`<div class="steps">
+        ${step('1. Deformación en la raíz de la viga',`<span class="m">ε</span> = ${fr('6·'+fmt(v.F,0)+'·'+fmt(L,3),'70×10<sup>9</sup>·'+fmt(b,3)+'·('+sci(h,2)+')²')} = ${B(fmt(e0*1e6,1)+' µε')}`)}
+        ${step('2. Cambio de resistencia (galga de 350 Ω)',`Δ<span class="m">R</span> = 350·${fmt(v.GF,2)}·${sci(e0,3)} = ${B(fmt(350*v.GF*e0,4)+' Ω')}`)}
+        ${step('3. Salida del puente',`${v.br==='q'?'¼ de puente':v.br==='h'?'½ puente':'puente completo'}: ${B(fmt(vb*1000,4)+' mV')}`)}
+        ${step('4. Salida amplificada',`${fmt(vb*1000,3)} mV · ${fsig(v.G)} = ${B(fmt(vo,3)+' V')}`)}
+        ${step('5. Sensibilidad del transductor',`${B(fmt(vo/Math.max(v.F,1)*1000,3)+' mV/N')}`)}
+        ${step('6. No linealidad del puente',`${B(fmt(nl,3)+' %')} ${v.br==='q'?'(solo el cuarto de puente la tiene)':''}`)}
+        ${step('7. Esfuerzo (aluminio, límite ≈ 270 MPa)',`<span class="m">σ</span> = <span class="m">Eε</span> = ${B(fmt(sig,1)+' MPa')}`)}
+      </div>${vo>5?'<p class="note alert">La salida pasa de 5 V y satura el ADC. Baja la ganancia.</p>':''}${sig>270?'<p class="note alert">La viga se deformaría de forma permanente. Aumenta el espesor.</p>':''}`;
+      return;
+    }
+    const q=v.d*1e-12*v.Fp, C=v.C*1e-12, V0=q/C, tau=v.R*1e6*C, tp=v.tp/1000, T=Math.max(tp*2.2,tp+5*tau), N=3000, dt=T/N;
+    const t=[],Vv=[],Fv=[]; let V=0, Fprev=0;
+    for(let i=0;i<=N;i++){ const ti=i*dt; const F=ti>=0.1*T&&ti<0.1*T+tp?v.Fp:0; V+=(v.d*1e-12*(F-Fprev))/C; V-=dt*V/tau; Fprev=F; t.push(ti*1000); Vv.push(V); Fv.push(F); }
+    const sc=V0/v.Fp;
+    P(root,'p1',{series:[{x:t,y:Fv.map(f=>f*sc),color:'s6',dash:[6,4],label:'fuerza (escalada)'},{x:t,y:Vv,color:'s2',label:'voltaje del piezo (V)'}],axes0:true,xlabel:'tiempo (ms)',ylabel:'V'});
+    const left=Math.exp(-tp/tau)*100;
+    $('#kpis',root).innerHTML=kpi('Carga generada',fmt(q*1e9,3)+' nC')+kpi('Voltaje inicial',fmt(V0,2)+' V')+kpi('Constante de tiempo',fmt(tau*1000,2)+' ms')+kpi('Señal que queda al final del pulso',fmt(left,1)+' %');
+    $('#calc',root).innerHTML=`<div class="steps">
+      ${step('1. Carga',`<span class="m">q</span> = ${fmt(v.d,0)} pC/N · ${fmt(v.Fp,0)} N = ${B(fmt(q*1e12,0)+' pC')}`)}
+      ${step('2. Voltaje en circuito abierto',`<span class="m">V</span><sub>0</sub> = ${fr(fmt(q*1e12,0)+' pC',fmt(v.C,0)+' pF')} = ${B(fmt(V0,3)+' V')}`)}
+      ${step('3. Constante de tiempo',`<span class="m">τ</span> = ${fsig(v.R)} MΩ · ${fmt(v.C,0)} pF = ${B(fmt(tau*1000,3)+' ms')}`)}
+      ${step('4. Frecuencia de corte del pasa altas',`<span class="m">f</span><sub>c</sub> = ${fr('1','2π<span class="m">τ</span>')} = ${B(fmt(1/(2*PI*tau),3)+' Hz')}`)}
+      ${step('5. Al final del pulso de '+fmt(v.tp,0)+' ms',`<span class="m">V</span>/<span class="m">V</span><sub>0</sub> = e<sup>−${fmt(tp,3)}/${fmt(tau,4)}</sup> = ${B(fmt(left,2)+' %')}`)}
+    </div><p class="note">Para medir fuerzas lentas con un piezo se usa un amplificador de carga, que fija τ en segundos o minutos con un capacitor de realimentación.</p>`;
+  }
+  ctl.fire();
+}};
+
+/* ---------- 4.1 ---------- */
+MODS.m41={unit:4,code:'4.1',title:'Sistema cardiovascular',nav:'Sistema cardiovascular',
+init(root){
+  root.innerHTML=layout({unit:4,code:'4.1',title:this.title,
+    lead:'Del sistema cardiovascular se mide la actividad eléctrica (ECG), la perfusión (fotopletismografía y oximetría) y la presión. Cada una usa un principio distinto y tiene sus propios errores típicos.',
+    caso:'(a) Oxímetro de pulso: luz roja (660 nm) e infrarroja (940 nm), un fotodiodo y el cociente de cocientes R. (b) Presión arterial invasiva: transductor piezorresistivo con puente de Wheatstone, sensibilidad estándar 5 µV/V/mmHg, que debe estar a la altura del eje flebostático.',
+    theory:`<p><b>Oximetría.</b> La hemoglobina oxigenada absorbe menos luz roja que la desoxigenada; en infrarrojo pasa lo contrario. La parte pulsátil (AC) se debe a la sangre arterial y la continua (DC) a tejido, venas y hueso. El cociente <span class="m">R = (AC/DC)<sub>rojo</sub> / (AC/DC)<sub>IR</sub></span> se convierte en SpO₂ con una curva de calibración empírica. El movimiento y la baja perfusión son las causas más comunes de error.</p>
+    <p><b>Presión invasiva.</b> La presión del catéter deforma una membrana con galgas piezorresistivas en puente completo. Antes de medir se hace el cero abierto a la atmósfera y se nivela el transductor con la aurícula derecha. Cada centímetro de desnivel equivale a 0,74 mmHg de error (columna de solución salina).</p>`,
+    formulas: eq(`<span class="m">R</span> = ${fr('AC<sub>rojo</sub>/DC<sub>rojo</sub>','AC<sub>IR</sub>/DC<sub>IR</sub>')}`)+
+      eq(`SpO₂ ≈ 110 − 25<span class="m">R</span>`,'calibración empírica')+
+      eq(`IP = ${fr('AC<sub>IR</sub>','DC<sub>IR</sub>')}·100 %`,'índice de perfusión')+
+      eq(`<span class="m">V</span><sub>o</sub> = 5 µV/V/mmHg · <span class="m">V</span><sub>ex</sub> · <span class="m">P</span>`)+
+      eq(`Δ<span class="m">P</span> = <span class="m">ρgh</span> ≈ 0,74 mmHg/cm`),
+    plots:[{id:'p1',cap:'Señal del sensor'},{id:'p2',cap:'Detalle',cls:'short'}],
+    practice:[
+      ['Si R = 0,5, ¿cuál es la SpO₂ estimada?','110 − 25·0,5 = 97,5 %.'],
+      ['El transductor quedó 10 cm por debajo del eje flebostático. ¿Qué error aparece?','La columna de líquido suma 10·0,74 = 7,4 mmHg: el monitor marca la presión 7 mmHg más alta.'],
+      ['¿Qué salida da el transductor con 5 V y 120 mmHg?','5 µV/V/mmHg · 5 V · 120 = 3 mV. Por eso se necesita un amplificador de instrumentación.']]
+  });
+  const ctl=makeControls($('#ctl',root),'s41',[
+    {type:'seg',id:'mode',label:'Medición',options:[['ox','Oximetría (PPG)'],['pa','Presión invasiva']],value:'ox'},
+    {id:'sp',label:'SpO₂ real del paciente',min:70,max:100,step:0.5,value:97,unit:'%',dec:1,showIf:v=>v.mode==='ox'},
+    {id:'hr',label:'Frecuencia cardíaca',min:40,max:180,step:1,value:75,unit:'lpm',dec:0,showIf:v=>v.mode==='ox'},
+    {id:'pi',label:'Índice de perfusión',min:0.2,max:10,step:0.1,value:2,unit:'%',dec:1,showIf:v=>v.mode==='ox'},
+    {id:'mo',label:'Artefacto de movimiento',min:0,max:3,step:0.1,value:0,unit:'% DC',dec:1,showIf:v=>v.mode==='ox'},
+    {id:'h',label:'Altura del transductor respecto al eje',min:-20,max:20,step:1,value:0,unit:'cm',dec:0,showIf:v=>v.mode==='pa'},
+    {id:'vex',label:'Excitación del puente',min:2,max:10,step:0.5,value:5,unit:'V',dec:1,showIf:v=>v.mode==='pa'},
+    {id:'G',label:'Ganancia del amplificador',min:10,max:2000,value:500,log:true,showIf:v=>v.mode==='pa'}],upd);
+  function upd(v){
+    if(v.mode==='ox'){
+      const fs=100, T=5, n=fs*T, f0=v.hr/60, R=(110-v.sp)/25, pir=v.pi/100, prd=R*pir, g=gaussGen(4);
+      const t=[],red=[],ir=[]; let ph=0.3, m1=0, m2=0;
+      for(let i=0;i<n;i++){ const ti=i/fs; const p=pulseShape(f0*ti); const mo=v.mo/100*(0.6*Math.sin(2*PI*0.7*ti+1)+0.4*Math.sin(2*PI*1.9*ti));
+        t.push(ti); red.push(1*(1-prd*p+mo+0.0005*g())); ir.push(1.2*(1-pir*p+mo*0.9+0.0005*g())); }
+      const ac=a=>Math.max(...a)-Math.min(...a), Rr=(ac(red)/mean(red))/(ac(ir)/mean(ir)), spE=clamp(110-25*Rr,0,100);
+      P(root,'p1',{series:[{x:t,y:red.map(x=>x/mean(red)),color:'s2',label:'rojo 660 nm (normalizado)'},{x:t,y:ir.map(x=>x/mean(ir)),color:'s5',label:'infrarrojo 940 nm (normalizado)'}],xlabel:'tiempo (s)',ylabel:'luz transmitida / DC'});
+      const sps=[],Rs=[]; for(let i=0;i<=100;i++){ const r=0.3+2*i/100; Rs.push(r); sps.push(110-25*r); }
+      P(root,'p2',{series:[{x:Rs,y:sps,color:'s1',label:'curva de calibración'}],points:[{x:R,y:v.sp,shape:'ring',color:'s3',size:5,text:'real'},{x:Rr,y:110-25*Rr,shape:'dot',color:'s2',size:5,text:'medido'}],xlabel:'R',ylabel:'SpO₂ (%)'});
+      const err=spE-v.sp;
+      $('#kpis',root).innerHTML=kpi('R medido',fmt(Rr,3))+kpi('SpO₂ mostrada',fmt(spE,1)+' %')+kpi('Error',(err>=0?'+':'')+fmt(err,1)+' puntos '+(Math.abs(err)>2?pill('bad','> 2 %'):pill('ok','≤ 2 %')))+kpi('Índice de perfusión',fmt(v.pi,1)+' % '+(v.pi<0.5?pill('warn','baja'):''));
+      $('#calc',root).innerHTML=`<div class="steps">
+        ${step('1. R esperado para la SpO₂ real',`<span class="m">R</span> = ${fr('110 − '+fmt(v.sp,1),'25')} = ${B(fmt(R,3))}`)}
+        ${step('2. Componentes pulsátiles',`(AC/DC)<sub>IR</sub> = ${B(fmt(pir*100,2)+' %')} &nbsp; (AC/DC)<sub>rojo</sub> = ${fmt(R,3)}·${fmt(pir*100,2)} % = ${B(fmt(prd*100,3)+' %')}`)}
+        ${step('3. Medición sobre la ventana de 5 s',`(AC/DC)<sub>rojo</sub> = ${fmt(ac(red)/mean(red)*100,3)} % &nbsp; (AC/DC)<sub>IR</sub> = ${fmt(ac(ir)/mean(ir)*100,3)} %`)}
+        ${step('4. Cociente de cocientes',`<span class="m">R</span> = ${fr(fmt(ac(red)/mean(red)*100,3),fmt(ac(ir)/mean(ir)*100,3))} = ${B(fmt(Rr,3))}`)}
+        ${step('5. SpO₂',`110 − 25·${fmt(Rr,3)} = ${B(fmt(spE,1)+' %')}`)}
+      </div><p class="note">Sube el artefacto de movimiento con perfusión baja: el movimiento afecta a los dos canales casi igual, R tiende a 1 y la SpO₂ se va hacia 85 %, un error clásico de los oxímetros.</p>`;
+      return;
+    }
+    const f0=75/60, T=3, n=600, t=[],Pt=[],Pm=[],Vo=[]; const dP=-v.h*0.74;
+    let mx=0; for(let i=0;i<=200;i++) mx=Math.max(mx,pulseShape(i/200));
+    for(let i=0;i<=n;i++){ const ti=T*i/n, p=80+40*pulseShape(f0*ti)/mx; t.push(ti); Pt.push(p); Pm.push(p+dP); Vo.push(5e-6*v.vex*(p+dP)*v.G*1000); }
+    P(root,'p1',{series:[{x:t,y:Pt,color:'s6',dash:[6,4],label:'presión real'},{x:t,y:Pm,color:'s2',label:'presión mostrada'}],xlabel:'tiempo (s)',ylabel:'mmHg'});
+    P(root,'p2',{series:[{x:t,y:Vo,color:'s1',label:'salida amplificada (mV)'}],xlabel:'tiempo (s)',ylabel:'mV'});
+    const pam=a=>mean(a);
+    $('#kpis',root).innerHTML=kpi('Real',fmt(Math.max(...Pt),0)+'/'+fmt(Math.min(...Pt),0)+' mmHg')+kpi('Mostrada',fmt(Math.max(...Pm),0)+'/'+fmt(Math.min(...Pm),0)+' mmHg')+kpi('Error por altura',(dP>=0?'+':'')+fmt(dP,1)+' mmHg')+kpi('Salida a 120 mmHg sin amplificar',fmt(5*v.vex*120/1000,3)+' mV');
+    $('#calc',root).innerHTML=`<div class="steps">
+      ${step('1. Sensibilidad del transductor',`5 µV/V/mmHg · ${fmt(v.vex,1)} V = ${B(fmt(5*v.vex,1)+' µV/mmHg')}`)}
+      ${step('2. Salida a 120 mmHg',`${fmt(5*v.vex,1)} µV · 120 = ${B(fmt(5*v.vex*120/1000,3)+' mV')}`)}
+      ${step('3. Después del amplificador',`${fmt(5*v.vex*120/1000,3)} mV · ${fsig(v.G)} = ${B(fmt(5*v.vex*120/1000*v.G,1)+' mV')}`)}
+      ${step('4. Error hidrostático',`Δ<span class="m">P</span> = <span class="m">ρgh</span> = 1000·9,81·${fmt(-v.h/100,2)} Pa = ${B(fmt(dP,2)+' mmHg')}`)}
+      ${step('5. Presión arterial media mostrada',`${B(fmt(pam(Pm),1)+' mmHg')} (real ${fmt(pam(Pt),1)})`)}
+    </div><p class="note">${v.h<0?'El transductor está por debajo del eje: la columna de líquido suma presión y el monitor sobreestima.':v.h>0?'El transductor está por encima del eje: el monitor subestima la presión.':'Transductor nivelado: no hay error hidrostático.'}</p>`;
+  }
+  ctl.fire();
+}};
+
+/* ---------- 4.2 ---------- */
+MODS.m42={unit:4,code:'4.2',title:'Sistema respiratorio',nav:'Sistema respiratorio',
+init(root){
+  root.innerHTML=layout({unit:4,code:'4.2',title:this.title,
+    lead:'En el sistema respiratorio el sensor central es el de flujo. El volumen no se mide: se calcula integrando el flujo, y cualquier error pequeño del sensor se acumula con el tiempo.',
+    caso:'(a) Espirometría forzada: el paciente bota todo el aire lo más rápido posible; de la curva salen la CVF, el VEF₁ y el flujo pico. (b) Respiración tranquila en un ventilador: un offset mínimo del sensor de flujo hace que el volumen calculado se desvíe. También se usa capnografía (CO₂ espirado, por absorción infrarroja) para confirmar ventilación.',
+    theory:`<p><b>Espirometría.</b> La espiración forzada se aproxima con una exponencial: el volumen sube rápido y se estabiliza en la capacidad vital forzada (CVF). El VEF₁ es el volumen espirado en el primer segundo. Si VEF₁/CVF &lt; 0,70 hay patrón obstructivo (asma, EPOC): la vía aérea estrecha aumenta la constante de tiempo.</p>
+    <p><b>Integración y deriva.</b> <span class="m">V(t) = ∫Q dt</span>. Si el sensor tiene un offset de 0,02 L/s, en un minuto el volumen se desvía 1,2 L. Los ventiladores reinician la integral en cada ciclo y recalibran el cero del sensor periódicamente.</p>
+    <p><b>Capnografía.</b> El CO₂ absorbe infrarrojo a 4,26 µm. La presión parcial al final de la espiración (EtCO₂, normal 35–45 mmHg) refleja la ventilación alveolar.</p>`,
+    formulas: eq(`<span class="m">V</span>(<span class="m">t</span>) = ∫<sub>0</sub><sup><span class="m">t</span></sup> <span class="m">Q</span>(<span class="m">τ</span>) d<span class="m">τ</span> ≈ Σ<span class="m">Q</span><sub>k</sub>Δ<span class="m">t</span>`)+
+      eq(`<span class="m">V</span>(<span class="m">t</span>) = CVF(1 − e<sup>−<span class="m">t</span>/<span class="m">τ</span></sup>)`,'modelo')+
+      eq(`VEF₁ = CVF(1 − e<sup>−1/<span class="m">τ</span></sup>)`)+
+      eq(`Deriva = <span class="m">Q</span><sub>offset</sub>·<span class="m">t</span>`)+
+      eq(`<span class="m">V̇</span><sub>E</sub> = <span class="m">V</span><sub>T</sub>·FR`,'volumen minuto'),
+    plots:[{id:'p1',cap:'Volumen'},{id:'p2',cap:'Flujo',cls:'short'}],
+    practice:[
+      ['CVF = 4 L y τ = 0,5 s. ¿Cuánto vale VEF₁/CVF?','1 − e<sup>−2</sup> = 0,865. Normal.'],
+      ['¿Con qué τ el cociente baja a 0,70?','1 − e<sup>−1/τ</sup> = 0,7 → τ = 1/ln(1/0,3) = 0,83 s.'],
+      ['Un sensor tiene offset de 0,05 L/s. ¿Cuánto se desvía el volumen en 30 s sin reiniciar la integral?','0,05·30 = 1,5 L. Más que tres volúmenes corrientes.']]
+  });
+  const ctl=makeControls($('#ctl',root),'s42',[
+    {type:'seg',id:'mode',label:'Prueba',options:[['esp','Espirometría forzada'],['vt','Respiración tranquila']],value:'esp'},
+    {id:'cvf',label:'Capacidad vital forzada CVF',min:1,max:6,step:0.1,value:4.5,unit:'L',dec:1,showIf:v=>v.mode==='esp'},
+    {id:'tau',label:'Constante de tiempo τ (obstrucción)',min:0.2,max:2,step:0.05,value:0.5,unit:'s',dec:2,showIf:v=>v.mode==='esp'},
+    {id:'ge',label:'Error de ganancia del sensor',min:-10,max:10,step:0.5,value:0,unit:'%',dec:1,showIf:v=>v.mode==='esp'},
+    {id:'fs',label:'Frecuencia de muestreo',min:5,max:200,step:1,value:100,unit:'Hz',dec:0,showIf:v=>v.mode==='esp'},
+    {id:'rr',label:'Frecuencia respiratoria',min:8,max:40,step:1,value:15,unit:'rpm',dec:0,showIf:v=>v.mode==='vt'},
+    {id:'vt',label:'Volumen corriente V<sub>T</sub>',min:200,max:800,step:10,value:500,unit:'mL',dec:0,showIf:v=>v.mode==='vt'},
+    {id:'off',label:'Offset del sensor de flujo',min:0,max:0.1,step:0.002,value:0.02,unit:'L/s',dec:3,showIf:v=>v.mode==='vt'},
+    {type:'check',id:'rst',label:'Reiniciar la integral en cada ciclo',value:false,showIf:v=>v.mode==='vt'}],upd);
+  function upd(v){
+    if(v.mode==='esp'){
+      const tr=0.05, Qf=t=>v.cvf/v.tau*Math.exp(-t/v.tau)*(1-Math.exp(-t/tr)), T=6;
+      const t=[],Vv=[],Q=[]; const dt=1/v.fs; let V=0, prev=Qf(0)*(1+v.ge/100);
+      for(let i=0;i*dt<=T;i++){ const ti=i*dt, q=Qf(ti)*(1+v.ge/100); if(i) V+=(q+prev)/2*dt; prev=q; t.push(ti); Vv.push(V); Q.push(q); }
+      const at=s=>{ const k=Math.min(Vv.length-1,Math.round(s*v.fs)); return Vv[k]; };
+      const fev1=at(1), fvc=Vv[Vv.length-1], ratio=fev1/fvc, pef=Math.max(...Q);
+      const fevT=v.cvf*(1-Math.exp(-1/v.tau));
+      P(root,'p1',{series:[{x:t,y:Vv,color:'s1',label:'volumen espirado (L)'}],vlines:[{x:1,color:'s4',label:'1 s'}],points:[{x:1,y:fev1,color:'s2',text:'VEF₁ '+fmt(fev1,2)+' L'}],xlabel:'tiempo (s)',ylabel:'L',yzero:true});
+      P(root,'p2',{series:[{x:Vv,y:Q,color:'s2',label:'curva flujo–volumen'}],points:Vv.length<80?Vv.map((x,i)=>({x,y:Q[i],shape:'dot',color:'s2',size:2.5})):[],xlabel:'volumen (L)',ylabel:'flujo (L/s)',yzero:true});
+      $('#kpis',root).innerHTML=kpi('CVF medida',fmt(fvc,2)+' L')+kpi('VEF₁',fmt(fev1,2)+' L')+kpi('VEF₁/CVF',fmt(ratio,3)+' '+(ratio<0.7?pill('bad','obstructivo'):pill('ok','normal')))+kpi('Flujo pico',fmt(pef,2)+' L/s');
+      $('#calc',root).innerHTML=`<div class="steps">
+        ${step('1. VEF₁ teórico',`${fmt(v.cvf,1)}(1 − e<sup>−1/${fmt(v.tau,2)}</sup>) = ${B(fmt(fevT,3)+' L')}`)}
+        ${step('2. Cociente teórico',`1 − e<sup>−1/${fmt(v.tau,2)}</sup> = ${B(fmt(1-Math.exp(-1/v.tau),3))}`)}
+        ${step('3. Integración numérica (trapecios)',`Δ<span class="m">t</span> = 1/${fmt(v.fs,0)} = ${B(fmt(dt*1000,1)+' ms')}; ${Vv.length} muestras`)}
+        ${step('4. Efecto del error de ganancia',`CVF × (1 ${v.ge>=0?'+':'−'} ${fmt(Math.abs(v.ge),1)} %) = ${B(fmt(fvc,3)+' L')}; el cociente no cambia`)}
+        ${step('5. Flujo pico medido',`${B(fmt(pef,2)+' L/s = '+fmt(pef*60,0)+' L/min')}`)}
+      </div><p class="note">Baja la frecuencia de muestreo a menos de 20 Hz: el flujo pico, que dura pocos milisegundos, se subestima. Las normas de espirometría piden al menos 100 Hz.</p>`;
+      return;
+    }
+    const Tb=60/v.rr, A=PI*v.vt/1000/Tb, fs=50, T=60, t=[],Q=[],Vv=[],Vt=[]; let V=0, Vr=0;
+    for(let i=0;i<=T*fs;i++){ const ti=i/fs, q=A*Math.sin(2*PI*ti/Tb), qm=q+v.off; if(v.rst&&i&&Math.floor(ti/Tb)!==Math.floor((ti-1/fs)/Tb)) V=0; t.push(ti); Q.push(qm); Vv.push(V); Vr=(1-Math.cos(2*PI*ti/Tb))/2*v.vt/1000; Vt.push(Vr); V+=qm/fs; }
+    P(root,'p1',{series:[{x:t,y:Vt,color:'s6',dash:[6,4],label:'volumen real'},{x:t,y:Vv,color:'s1',label:'volumen calculado'}],xlabel:'tiempo (s)',ylabel:'L'});
+    P(root,'p2',{series:[{x:t,y:Q,color:'s2',label:'flujo medido (L/s)'}],axes0:true,xlabel:'tiempo (s)',ylabel:'L/s'});
+    const drift=v.rst?v.off*Tb:v.off*60;
+    $('#kpis',root).innerHTML=kpi('Volumen minuto',fmt(v.vt*v.rr/1000,2)+' L/min')+kpi('Flujo inspiratorio pico',fmt(A,3)+' L/s')+kpi('Deriva acumulada',fmt(drift,3)+' L')+kpi('Error en V<sub>T</sub> por ciclo',fmt(v.off*Tb/2*1000,0)+' mL');
+    $('#calc',root).innerHTML=`<div class="steps">
+      ${step('1. Periodo respiratorio',`<span class="m">T</span> = 60/${fmt(v.rr,0)} = ${B(fmt(Tb,2)+' s')}`)}
+      ${step('2. Flujo pico para el V<sub>T</sub> dado',`<span class="m">Q</span><sub>pico</sub> = ${fr('π<span class="m">V</span><sub>T</sub>','<span class="m">T</span>')} = ${fr('π·'+fmt(v.vt/1000,2),fmt(Tb,2))} = ${B(fmt(A,3)+' L/s')}`)}
+      ${step('3. Volumen minuto',`${fmt(v.vt,0)} mL · ${fmt(v.rr,0)} = ${B(fmt(v.vt*v.rr/1000,2)+' L/min')}`)}
+      ${step('4. Deriva en un minuto sin reinicio',`${fmt(v.off,3)} L/s · 60 s = ${B(fmt(v.off*60,2)+' L')}`)}
+      ${step('5. Con reinicio por ciclo',`máximo ${fmt(v.off,3)}·${fmt(Tb,2)} = ${B(fmt(v.off*Tb,3)+' L')} por ciclo`)}
+    </div>`;
+  }
+  ctl.fire();
+}};
+
+/* ---------- 4.3 ---------- */
+MODS.m43={unit:4,code:'4.3',title:'Sistemas adaptables a las dinámicas sociotecnológicas',nav:'Sistemas adaptables (vestibles y telemedicina)',
+init(root){
+  root.innerHTML=layout({unit:4,code:'4.3',title:this.title,
+    lead:'Los sensores salieron de la UCI y llegaron al cuerpo del paciente: relojes, parches, cuelleras y plantillas que transmiten por Bluetooth a un celular. En estos equipos la batería, la cantidad de datos y la comodidad pesan tanto como la exactitud.',
+    caso:'Cuellera vestible para corrección postural con un acelerómetro de 6 ejes (IMU), un microcontrolador y Bluetooth de baja energía (BLE). Se calcula cuánto dura la batería y cuántos datos genera, y se ve cómo cambia al dormir el microcontrolador entre mediciones.',
+    theory:`<p>El consumo promedio es la suma ponderada del consumo de cada bloque por la fracción de tiempo que está activo (ciclo de trabajo). La autonomía es la capacidad útil de la batería dividida por la corriente promedio. Se suele tomar el 80 % de la capacidad nominal.</p>
+    <ul><li>Dormir el microcontrolador y despertarlo solo para leer el sensor reduce el consumo de decenas de mA a cientos de µA.</li>
+    <li>Procesar en el dispositivo y enviar solo eventos (por ejemplo, “mala postura durante 2 min”) gasta mucho menos que transmitir la señal cruda.</li>
+    <li>La frecuencia de muestreo debe ser la mínima que cumpla Nyquist para el movimiento: la postura cambia a menos de 2 Hz.</li></ul>
+    <p>Otros factores de diseño: biocompatibilidad del material en contacto con la piel, lavabilidad, seguridad eléctrica, privacidad de los datos y facilidad de uso para adultos mayores.</p>`,
+    formulas: eq(`<span class="m">Ī</span> = Σ <span class="m">I</span><sub>k</sub>·<span class="m">D</span><sub>k</sub>`,'D = fracción de tiempo activo')+
+      eq(`Autonomía = ${fr('0,8·<span class="m">C</span><sub>bat</sub>','<span class="m">Ī</span>')}`)+
+      eq(`Tasa de datos = <span class="m">n</span><sub>ejes</sub>·<span class="m">b</span>·<span class="m">f</span><sub>s</sub>`,'bytes/s')+
+      eq(`<span class="m">D</span><sub>BLE</sub> = ${fr('<span class="m">t</span><sub>tx</sub>','<span class="m">T</span><sub>envío</sub>')}`),
+    plots:[{id:'p1',cap:'Descarga de la batería'}],
+    after:`<section class="calc"><h2>¿Quién se gasta la batería?</h2><div id="bars"></div></section>`,
+    practice:[
+      ['Batería de 300 mAh, consumo promedio 2 mA. ¿Cuánto dura?','0,8·300/2 = 120 h = 5 días.'],
+      ['6 ejes de 16 bits a 50 Hz. ¿Cuántos datos por día?','6·2·50 = 600 B/s → 51,8 MB por día. Mucho para BLE continuo; por eso se envían resúmenes.'],
+      ['¿Qué ahorra más: bajar fs de 100 a 50 Hz o dormir el MCU el 80 % del tiempo?','Casi siempre dormir el MCU, porque su consumo activo es el mayor. Mira la gráfica de barras.']]
+  });
+  const ctl=makeControls($('#ctl',root),'s43',[
+    {id:'C',label:'Capacidad de la batería',min:100,max:1000,step:10,value:300,unit:'mAh',dec:0},
+    {id:'imu',label:'Consumo de la IMU',min:0.5,max:4,step:0.1,value:3.6,unit:'mA',dec:1},
+    {id:'mcu',label:'MCU activo',min:2,max:30,step:0.5,value:12,unit:'mA',dec:1},
+    {id:'slp',label:'MCU dormido',min:1,max:500,step:1,value:20,unit:'µA',dec:0},
+    {id:'du',label:'Ciclo de trabajo del MCU',min:1,max:100,step:1,value:20,unit:'%',dec:0},
+    {type:'check',id:'imuS',label:'Apagar la IMU cuando el MCU duerme',value:false},
+    {id:'tx',label:'Corriente de transmisión BLE',min:3,max:20,step:0.5,value:8,unit:'mA',dec:1},
+    {id:'Tt',label:'Envío cada',min:0.1,max:60,value:1,log:true,unit:'s'},
+    {id:'fs',label:'Muestreo de la IMU',min:10,max:200,step:5,value:50,unit:'Hz',dec:0}],upd);
+  function upd(v){
+    const d=v.du/100, ttx=0.003, Dtx=Math.min(1,ttx/v.Tt);
+    const parts=[['IMU',v.imu*(v.imuS?d:1)],['MCU activo',v.mcu*d],['MCU dormido',v.slp/1000*(1-d)],['BLE transmisión',v.tx*Dtx],['BLE conexión y regulador',0.05]];
+    const I=parts.reduce((s,p)=>s+p[1],0), Iall=v.imu+v.mcu+v.tx*Dtx+0.05, h=0.8*v.C/I, hall=0.8*v.C/Iall;
+    const Tmax=Math.min(Math.max(h,hall)*1.1,2000), t=[],a=[],b=[]; for(let i=0;i<=300;i++){ const ti=Tmax*i/300; t.push(ti); a.push(Math.max(0,100-ti*I/v.C*100)); b.push(Math.max(0,100-ti*Iall/v.C*100)); }
+    P(root,'p1',{series:[{x:t,y:b,color:'s6',dash:[6,4],label:'todo encendido siempre'},{x:t,y:a,color:'s3',label:'tu configuración'}],hlines:[{y:20,color:'s2',label:'20 % (reserva)'}],xlabel:'horas',ylabel:'batería (%)',ylim:[0,105]});
+    const rate=6*2*v.fs, perDay=rate*86400/1e6;
+    $('#kpis',root).innerHTML=kpi('Corriente promedio',fmt(I,3)+' mA')+kpi('Autonomía',fmt(h,1)+' h ('+fmt(h/24,1)+' días)')+kpi('Si todo estuviera encendido',fmt(hall,1)+' h')+kpi('Datos crudos por día',fmt(perDay,1)+' MB');
+    $('#bars',root).innerHTML=parts.map(p=>`<div style="display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr) 90px;gap:10px;align-items:center;margin:6px 0;font-size:13px"><span>${p[0]}</span><span style="height:12px;border-radius:3px;background:var(--surface-2);overflow:hidden"><span style="display:block;height:100%;width:${(p[1]/I*100).toFixed(1)}%;background:var(--accent)"></span></span><span style="font-family:var(--f-mono);text-align:right">${fmt(p[1]/I*100,1)} %</span></div>`).join('');
+    $('#calc',root).innerHTML=`<div class="steps">
+      ${step('1. IMU',`${fmt(v.imu,1)} mA · ${v.imuS?fmt(d,2):'1'} = ${B(fmt(parts[0][1],3)+' mA')}`)}
+      ${step('2. Microcontrolador',`${fmt(v.mcu,1)}·${fmt(d,2)} + ${fmt(v.slp/1000,3)}·${fmt(1-d,2)} = ${B(fmt(parts[1][1]+parts[2][1],3)+' mA')}`)}
+      ${step('3. Bluetooth',`${fmt(v.tx,1)} mA · ${fr('3 ms',fsig(v.Tt)+' s')} + 0,05 = ${B(fmt(parts[3][1]+0.05,4)+' mA')}`)}
+      ${step('4. Corriente promedio',`<span class="m">Ī</span> = ${B(fmt(I,3)+' mA')}`)}
+      ${step('5. Autonomía',`${fr('0,8·'+fmt(v.C,0),fmt(I,3))} = ${B(fmt(h,1)+' h')}`)}
+      ${step('6. Tasa de datos crudos',`6 ejes · 2 B · ${fmt(v.fs,0)} Hz = ${B(fmt(rate,0)+' B/s')}`)}
+    </div>${h<24?'<p class="note alert">No alcanza para un día de uso. Un dispositivo vestible debería durar al menos una jornada completa.</p>':''}`;
+  }
+  ctl.fire();
+}};
+
+/* ---------- inicio y formulario ---------- */
+const UNITS=[
+  {n:1,title:'Introducción a los sensores de uso biológico',mods:['m11','m12','m13']},
+  {n:2,title:'Consideraciones de diseño',mods:['m21','m22','m23']},
+  {n:3,title:'Integración de dispositivos',mods:['m31','m32','m33']},
+  {n:4,title:'Aplicaciones de sensores',mods:['m41','m42','m43']}];
+const BLURB={m11:'Resolución, rango, exactitud y precisión de un termómetro',m12:'Pt100, NTC, termopar y capacitivo',m13:'Divisor con NTC, R óptima y autocalentamiento',m21:'Mínimos cuadrados con un transductor de presión',m22:'ECG con ruido, filtros, Nyquist y aliasing',m23:'Ciclo de carga de un FSR para postura',m31:'Inclinación cervical, filtro y alerta',m32:'Venturi, hilo caliente y neumotacógrafo',m33:'Galgas, puente de Wheatstone y piezoeléctricos',m41:'Oximetría de pulso y presión invasiva',m42:'Espirometría y deriva al integrar flujo',m43:'Batería y datos de una cuellera vestible'};
+function home(root){
+  root.innerHTML=`<article class="mod">
+    <section class="hero"><div><div class="mh"><div class="eyebrow">Fundación Universitaria del Área Andina · Ingeniería Biomédica</div></div>
+      <h1>Laboratorio de Sensores Biomédicos</h1>
+      <p>Las 12 subtemáticas del microcurrículo de Sensores Aplicados a Sistemas Biomédicos. Cada una trae su teoría, sus fórmulas, un simulador con parámetros ajustables y el cálculo paso a paso con tus valores.</p>
+      <p>Los ejemplos salen de equipos reales y de lo trabajado en clase: termómetros, transductores de presión, oxímetros, espirómetros, sensores de flujo, galgas, piezoeléctricos y dispositivos de postura.</p>
+      <div class="meta"><span><b>Semestre</b> VII</span><span><b>Créditos</b> 3</span><span><b>Tipo</b> teórico-práctica</span><span><b>Horas</b> 72 directas + 72 autónomas</span><span><b>Metodología</b> ABP</span></div></div>
+      <div class="plot"><figcaption><b>Señal y ruido</b><span>ECG crudo frente a filtrado</span></figcaption><canvas id="hp" style="height:250px" role="img" aria-label="ECG con ruido y filtrado"></canvas><div class="legend"></div></div></section>
+    <div class="units">${UNITS.map(u=>`<section class="unit"><div class="un">Unidad ${u.n}</div><h2>${u.title}</h2>${u.mods.map(id=>`<a href="#${id}"><span>${MODS[id].code}</span><span>${MODS[id].nav}<small>${BLURB[id]}</small></span></a>`).join('')}</section>`).join('')}
+    <section class="unit" style="grid-column:1/-1"><div class="un">Repaso</div><h2>Formulario completo</h2><a href="#formulario"><span>Σ</span><span>Todas las fórmulas del curso en una sola página<small>Útil antes del parcial</small></span></a></section></div>
+    <section class="calc"><h2>Cómo estudiar con el aplicativo</h2><div class="steps">
+      ${step('1. Lee la teoría y las fórmulas','Arriba de cada simulador están las ecuaciones que vas a usar.')}
+      ${step('2. Predice antes de mover','Piensa qué debería pasar si cambias un parámetro del sensor.')}
+      ${step('3. Mueve y compara','Verifica en la gráfica y en las tarjetas de resultados.')}
+      ${step('4. Revisa el cálculo','El bloque de cálculo muestra el desarrollo con tus números.')}
+      ${step('5. Responde las preguntas','Cada tema termina con ejercicios cortos y su solución.')}
+    </div></section></article>`;
+  const fs=500,t=[],a=[],RR=60/72,g=gaussGen(2); for(let i=0;i<fs*2.5;i++){ const ti=i/fs; t.push(ti); a.push(ecgBeat(ti%RR,1)+0.06*g()+0.25*Math.sin(2*PI*60*ti)); }
+  const b=biquad(biquad(a,lpCoef(40,fs)),notchCoef(60,fs));
+  P(root,'hp',{series:[{x:t,y:a,color:'s6',width:1,label:'crudo'},{x:t,y:b,color:'s2',label:'filtrado'}],xlabel:'tiempo (s)',ylabel:'mV'});
+}
+function formulario(root){
+  const blk=(t,items)=>`<section class="formulas"><div class="ft">${t}</div>${items.join('')}</section>`;
+  root.innerHTML=`<article class="mod"><header class="mh"><div class="eyebrow">Repaso</div><h1>Formulario de Sensores Aplicados</h1><p class="lead">Las ecuaciones de las cuatro unidades. Cada bloque enlaza con su simulador.</p></header><div class="fsheet">
+  ${blk('Unidad 1 · Definiciones y tipos',[eq('LSB = V<sub>ref</sub>/2<sup>n</sup> &nbsp; Resolución = LSB/S'),eq('Exactitud = |x̄ − x<sub>real</sub>| &nbsp; Precisión = σ'),eq('<span class="m">R</span> = <span class="m">R</span><sub>0</sub>(1 + αT)','Pt100'),eq('<span class="m">R</span> = <span class="m">R</span><sub>25</sub>e<sup>β(1/T − 1/298,15)</sup>','NTC'),eq('<span class="m">C</span> = ε<sub>0</sub>ε<sub>r</sub><span class="m">A</span>/<span class="m">d</span>'),eq('V<sub>out</sub> = V<sub>cc</sub>R<sub>f</sub>/(R<sub>f</sub> + R) &nbsp; R<sub>f,ópt</sub> = R(T<sub>0</sub>)'),eq('ΔT = I²R/δ','autocalentamiento'),'<a href="#m11">Ir a la unidad 1 →</a>'])}
+  ${blk('Unidad 2 · Diseño',[eq('m = (NΣxy − ΣxΣy)/(NΣx² − (Σx)²) &nbsp; b = (Σy − mΣx)/N'),eq('R² = 1 − SS<sub>res</sub>/SS<sub>tot</sub>'),eq('SNR = 10 log(P<sub>s</sub>/P<sub>n</sub>) = 20 log(V<sub>s</sub>/V<sub>n</sub>)'),eq('f<sub>s</sub> > 2f<sub>máx</sub> &nbsp; f<sub>alias</sub> = |f − kf<sub>s</sub>|'),eq('S = ΔV/ΔF &nbsp; H% = máx|V<sub>↓</sub> − V<sub>↑</sub>|/V<sub>FS</sub>·100'),'<a href="#m21">Ir a la unidad 2 →</a>'])}
+  ${blk('Unidad 3 · Integración',[eq('θ = atan2(a<sub>x</sub>, a<sub>z</sub>) &nbsp; y<sub>k</sub> = αx<sub>k</sub> + (1−α)y<sub>k−1</sub>'),eq('Q = C<sub>d</sub>A<sub>2</sub>√(2ΔP/(ρ(1−β⁴)))','Venturi'),eq('E² = A + BU<sup>n</sup>','King'),eq('Re = ρvD/μ'),eq('ΔR/R = GF·ε &nbsp; ε = 6FL/(Ebh²)'),eq('¼: V<sub>ex</sub>GFε/4 &nbsp; ½: V<sub>ex</sub>GFε/2 &nbsp; 1: V<sub>ex</sub>GFε'),eq('q = d<sub>33</sub>F &nbsp; V = q/C &nbsp; τ = RC'),'<a href="#m31">Ir a la unidad 3 →</a>'])}
+  ${blk('Unidad 4 · Aplicaciones',[eq('R = (AC/DC)<sub>rojo</sub>/(AC/DC)<sub>IR</sub> &nbsp; SpO₂ ≈ 110 − 25R'),eq('V<sub>o</sub> = 5 µV/V/mmHg · V<sub>ex</sub> · P'),eq('ΔP = ρgh ≈ 0,74 mmHg/cm'),eq('V(t) = ∫Q dt &nbsp; VEF₁/CVF < 0,70 → obstructivo'),eq('V̇<sub>E</sub> = V<sub>T</sub>·FR'),eq('Ī = ΣI<sub>k</sub>D<sub>k</sub> &nbsp; Autonomía = 0,8C/Ī'),'<a href="#m41">Ir a la unidad 4 →</a>'])}
+  </div></article>`;
+}
+
+/* =============== navegación =============== */
+const ORDER=['inicio',...UNITS.flatMap(u=>u.mods),'formulario'];
+function buildNav(){
+  $('#side').innerHTML=`<a class="home" href="#inicio" data-id="inicio">Inicio</a>`+UNITS.map(u=>`<h3><i>U${u.n}</i>${u.title}</h3>`+u.mods.map(id=>`<a class="it" href="#${id}" data-id="${id}"><span>${MODS[id].code}</span><span>${MODS[id].nav}</span></a>`).join('')).join('')+`<h3>Repaso</h3><a class="it" href="#formulario" data-id="formulario"><span>Σ</span><span>Formulario completo</span></a>`;
+  const sel=$('#navsel'); sel.innerHTML=`<option value="inicio">Inicio</option>`+UNITS.map(u=>`<optgroup label="Unidad ${u.n}">${u.mods.map(id=>`<option value="${id}">${MODS[id].code} ${MODS[id].nav}</option>`).join('')}</optgroup>`).join('')+`<option value="formulario">Formulario completo</option>`;
+  sel.onchange=()=>{ location.hash=sel.value; };
+}
+function route(){
+  let id=(location.hash||'').slice(1); if(!ORDER.includes(id)) id='inicio';
+  const main=$('#main'); main.innerHTML='';
+  if(id==='inicio') home(main); else if(id==='formulario') formulario(main); else MODS[id].init(main);
+  document.querySelectorAll('.side a').forEach(a=>{ if(a.dataset.id===id) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
+  $('#navsel').value=id; window.scrollTo(0,0);
+}
+buildNav(); window.addEventListener('hashchange',route); route();
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(redrawAll);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Aplicativos interactivos de estudio para Ingeniería Biomédica, VII semestre">
+<title>Aplicativos de Ingeniería Biomédica</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@85..110,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#EDF1F4; --surface:#FFFFFF; --ink:#15202A; --muted:#566778; --line:#D3DCE4;
+  --c1:#B0243E; --c2:#0B746F; --c3:#4A4BA8;
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif; --f-body:"IBM Plex Sans",system-ui,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0B1016; --surface:#111920; --ink:#E3EAF0; --muted:#92A3B3; --line:#24313D;
+  --c1:#F06A82; --c2:#3CC4B9; --c3:#A3A5FF; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font-family:var(--f-body);font-size:15px;line-height:1.55;padding:48px max(16px,env(safe-area-inset-left,0px)) 64px max(16px,env(safe-area-inset-right,0px))}
+main{max-width:1080px;margin:0 auto}
+.eyebrow{font-family:var(--f-mono);font-size:12px;color:var(--muted);letter-spacing:.04em}
+h1{font-family:var(--f-display);font-weight:800;font-stretch:88%;font-size:clamp(32px,5vw,54px);line-height:1;margin:8px 0 14px;letter-spacing:-.02em;text-wrap:balance}
+.lead{color:var(--muted);max-width:62ch;font-size:16px;margin:0 0 32px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}
+a.card{display:flex;flex-direction:column;gap:10px;background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--c);border-radius:6px 6px 10px 10px;padding:20px 22px;text-decoration:none;color:inherit;transition:transform .15s,border-color .15s}
+a.card:hover,a.card:focus-visible{transform:translateY(-2px);border-color:var(--c);outline:none}
+.card .k{font-family:var(--f-mono);font-size:12px;color:var(--c)}
+.card h2{font-family:var(--f-display);font-weight:750;font-stretch:92%;font-size:24px;margin:0;line-height:1.1}
+.card p{margin:0;color:var(--muted);font-size:14px}
+.card ul{margin:0;padding-left:18px;font-size:13.5px}
+.card .go{margin-top:auto;font-weight:600;color:var(--c);font-size:14px}
+footer{margin-top:40px;font-size:13px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){a.card{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">Fundación Universitaria del Área Andina · Ingeniería Biomédica · VII semestre</div>
+  <h1>Aplicativos interactivos de estudio</h1>
+  <p class="lead">Un aplicativo por asignatura, organizado según su microcurrículo. Cada tema trae teoría, fórmulas explicadas variable por variable, una herramienta con parámetros ajustables, el cálculo paso a paso y ejercicios con solución.</p>
+  <div class="grid">
+    <a class="card" href="control-electronico.html" style="--c:var(--c1)">
+      <span class="k">4 unidades · 12 temas</span><h2>Control Electrónico</h2>
+      <p>Modelado, respuesta transitoria, lugar de las raíces, Bode, Routh, PID y espacio de estados.</p>
+      <ul><li>Catéter de presión arterial y prueba de lavado</li><li>Calentador de sangre con PID</li><li>Brazo de rehabilitación y observador</li></ul>
+      <span class="go">Abrir aplicativo →</span></a>
+    <a class="card" href="sensores-aplicados.html" style="--c:var(--c2)">
+      <span class="k">4 unidades · 12 temas</span><h2>Sensores Aplicados</h2>
+      <p>Definiciones, tipos de sensores, calibración, ruido, histéresis, acelerómetros, flujo, fuerza y aplicaciones.</p>
+      <ul><li>Oximetría y presión invasiva</li><li>Espirometría y sensores de flujo</li><li>Cuellera vestible y batería</li></ul>
+      <span class="go">Abrir aplicativo →</span></a>
+    <a class="card" href="gestion-procesos-salud.html" style="--c:var(--c3)">
+      <span class="k">4 unidades · 12 temas</span><h2>Gestión de Procesos en Salud</h2>
+      <p>Calidad, ISO 9001:2015, planeación estratégica, mejora continua, proyectos y Lean Six Sigma.</p>
+      <ul><li>Pareto, Ishikawa y gráficas de control</li><li>VSM de urgencias y Kaizen</li><li>Ruta crítica, valor ganado y Cpk</li></ul>
+      <span class="go">Abrir aplicativo →</span></a>
+  </div>
+  <footer>Funciona en el navegador, sin instalación. Las páginas guardan su estado en la dirección (#tema), así que puedes enlazar un tema directamente.</footer>
+</main>
+</body>
+</html>
